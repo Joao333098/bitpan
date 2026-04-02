@@ -1,10 +1,9 @@
 services:
   - type: web
     name: bitpan
-    runtime: python
+    runtime: docker
     branch: main
-    buildCommand: pip install -e . && playwright install chromium --with-deps
-    startCommand: python webapp/server.py
+    dockerfilePath: ./Dockerfile
     plan: starter
     healthCheckPath: /
     envVars:

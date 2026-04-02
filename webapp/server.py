@@ -310,6 +310,17 @@ async def websocket_endpoint(websocket: WebSocket):
             elif msg.get("type") == "human_input":
                 human_input_queue.put_nowait(msg.get("text", ""))
 
+            elif msg.get("type") == "click":
+                sess = active_sessions.get(session_id, {})
+                agent = sess.get("agent")
+                if agent and agent.browser.current_page:
+                    try:
+                        await agent.browser.current_page.mouse.click(
+                            msg.get("x", 0), msg.get("y", 0)
+                        )
+                    except Exception as e:
+                        logger.warning(f"Click failed: {e}")
+
             elif msg.get("type") == "force_continue":
                 sess = active_sessions.get(session_id, {})
                 ce = sess.get("continue_event")

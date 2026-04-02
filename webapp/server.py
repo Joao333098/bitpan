@@ -72,42 +72,49 @@ async def websocket_endpoint(websocket: WebSocket):
         except Exception:
             pass
 
-    def get_screenshot():
-        sess = active_sessions.get(session_id, {})
-        agent = sess.get("agent")
-        if agent and agent.browser._state and agent.browser._state.screenshot_with_highlights:
-            return agent.browser._state.screenshot_with_highlights
-        if agent and agent.browser._state and agent.browser._state.screenshot:
-            return agent.browser._state.screenshot
+    def get_agent():
+        return active_sessions.get(session_id, {}).get("agent")
+
+    def get_page():
+        agent = get_agent()
+        if agent and agent.browser.current_page:
+            return agent.browser.current_page
         return None
 
     def get_url():
-        sess = active_sessions.get(session_id, {})
-        agent = sess.get("agent")
-        if agent and agent.browser.current_page:
+        page = get_page()
+        if page:
             try:
-                return agent.browser.current_page.url
+                return page.url
             except Exception:
                 pass
         return ""
 
-    async def stream_screenshots():
-        """Background task: send live screenshots every 500ms while agent is running"""
-        while True:
-            await asyncio.sleep(0.5)
-            sess = active_sessions.get(session_id, {})
-            if not sess.get("running"):
-                break
-            ss = get_screenshot()
-            if ss:
-                try:
-                    await websocket.send_text(json.dumps({"type": "live_screenshot", "screenshot": ss, "url": get_url()}))
-                except Exception:
-                    break
+    def get_screenshot():
+        agent = get_agent()
+        if agent and agent.browser._state:
+            return agent.browser._state.screenshot_with_highlights or agent.browser._state.screenshot
+        return None
 
+    # ── CDP Screencast ──────────────────────────────────────────────
+    async def start_screencast(agent: Agent):
+        async def on_frame(jpeg_b64: str):
+            try:
+                await websocket.send_text(json.dumps({
+                    "type": "live_frame",
+                    "data": jpeg_b64,
+                    "url": get_url(),
+                }))
+            except Exception:
+                pass
+        try:
+            await agent.browser.start_screencast(on_frame)
+        except Exception as e:
+            logger.warning(f"Screencast start failed: {e}")
+
+    # ── Agent runner ────────────────────────────────────────────────
     async def run_agent(prompt: str):
         agent = None
-        stream_task = None
         try:
             llm = make_nova_provider()
             browser_config = BrowserConfig(viewport_size={"width": 1280, "height": 800})
@@ -118,7 +125,8 @@ async def websocket_endpoint(websocket: WebSocket):
 
             await send({"type": "status", "content": "running"})
 
-            stream_task = asyncio.create_task(stream_screenshots())
+            # Start live screencast
+            await start_screencast(agent)
 
             step = 0
             result = None
@@ -130,7 +138,6 @@ async def websocket_endpoint(websocket: WebSocket):
             while not is_done and step < max_steps:
                 await send({"type": "step_start", "step": step + 1})
 
-                # Retry failed steps up to 3 times
                 step_error = None
                 for attempt in range(3):
                     try:
@@ -148,7 +155,6 @@ async def websocket_endpoint(websocket: WebSocket):
                     if session_id in active_sessions:
                         active_sessions[session_id]["paused"] = True
                         active_sessions[session_id]["running"] = False
-                    # Wait for user to click "Force Continue" or "Stop"
                     ce = active_sessions.get(session_id, {}).get("continue_event")
                     if ce:
                         ce.clear()
@@ -159,16 +165,13 @@ async def websocket_endpoint(websocket: WebSocket):
                     if session_id in active_sessions:
                         active_sessions[session_id]["paused"] = False
                         active_sessions[session_id]["running"] = True
-                    # Skip the failed step result and retry with clean state
                     result = None
                     await send({"type": "status", "content": "running"})
 
                 step += 1
-
                 screenshot_b64 = get_screenshot()
                 current_url = get_url()
 
-                # ── HUMAN CONTROL / CAPTCHA DETECTED ──────────────────────────
                 if result.give_control:
                     agent_message = str(result.content or "The agent needs your help to continue.")
                     await send({
@@ -178,20 +181,16 @@ async def websocket_endpoint(websocket: WebSocket):
                         "screenshot": screenshot_b64,
                         "url": current_url,
                     })
-
-                    # Wait up to 3 min for the user to reply
                     try:
                         user_text = await asyncio.wait_for(human_input_queue.get(), timeout=180)
                     except asyncio.TimeoutError:
                         await send({"type": "error", "content": "Timeout: no response from user in 3 minutes."})
                         break
 
-                    # Type the user's input into the page
-                    page = agent.browser.current_page
+                    page = get_page()
                     if page and user_text:
                         try:
                             typed = False
-                            # Priority order: captcha-specific → generic text → password → textarea
                             selector_groups = [
                                 ['input[name*="captcha"]', 'input[id*="captcha"]',
                                  'input[placeholder*="captcha"]', 'input[class*="captcha"]'],
@@ -209,30 +208,25 @@ async def websocket_endpoint(websocket: WebSocket):
                                             if await el.is_visible():
                                                 await el.scroll_into_view_if_needed()
                                                 await el.click()
-                                                await el.fill("")          # clear first
+                                                await el.fill("")
                                                 await el.type(user_text, delay=50)
                                                 await asyncio.sleep(0.3)
                                                 await page.keyboard.press("Enter")
                                                 typed = True
-                                                logger.info(f"Typed into element: {selector}")
                                                 break
                                         except Exception:
                                             continue
                                     if typed:
                                         break
                             if not typed:
-                                # Last resort: type into whatever is currently focused
-                                logger.info("No visible input found, typing into focused element")
                                 await page.keyboard.type(user_text, delay=50)
                                 await page.keyboard.press("Enter")
                             await asyncio.sleep(2)
                         except Exception as e:
                             logger.warning(f"Could not fill human input: {e}")
 
-                    # Reset so the loop continues
-                    result = ActionResult(is_done=False, content=f"User provided input. Continuing.")
+                    result = ActionResult(is_done=False, content="User provided input. Continuing.")
                     is_done = False
-
                     await send({
                         "type": "step",
                         "step": step,
@@ -244,9 +238,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     })
                     continue
 
-                # ── NORMAL STEP ───────────────────────────────────────────────
                 is_done = result.is_done
-
                 await send({
                     "type": "step",
                     "step": step,
@@ -275,9 +267,11 @@ async def websocket_endpoint(websocket: WebSocket):
             logger.exception("Agent error")
             await send({"type": "error", "content": str(e)})
         finally:
-            if stream_task and not stream_task.done():
-                stream_task.cancel()
             if agent:
+                try:
+                    await agent.browser.stop_screencast()
+                except Exception:
+                    pass
                 try:
                     await agent.browser.close()
                 except Exception:
@@ -287,6 +281,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 active_sessions[session_id]["agent"] = None
             await send({"type": "status", "content": "idle"})
 
+    # ── WebSocket message loop ──────────────────────────────────────
     try:
         while True:
             data = await websocket.receive_text()
@@ -296,12 +291,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 if active_sessions.get(session_id, {}).get("running"):
                     await send({"type": "error", "content": "Agent is already running."})
                     continue
-
                 prompt = msg.get("prompt", "").strip()
                 if not prompt:
                     await send({"type": "error", "content": "Please enter a task."})
                     continue
-
                 if session_id in active_sessions:
                     active_sessions[session_id]["running"] = True
                 await send({"type": "status", "content": "starting"})
@@ -310,16 +303,97 @@ async def websocket_endpoint(websocket: WebSocket):
             elif msg.get("type") == "human_input":
                 human_input_queue.put_nowait(msg.get("text", ""))
 
-            elif msg.get("type") == "click":
-                sess = active_sessions.get(session_id, {})
-                agent = sess.get("agent")
-                if agent and agent.browser.current_page:
+            # ── Mouse / keyboard / scroll events ──
+            elif msg.get("type") == "mousedown":
+                page = get_page()
+                if page:
+                    btn = {0: "left", 1: "middle", 2: "right"}.get(msg.get("button", 0), "left")
                     try:
-                        await agent.browser.current_page.mouse.click(
-                            msg.get("x", 0), msg.get("y", 0)
-                        )
+                        await page.mouse.move(msg["x"], msg["y"])
+                        await page.mouse.down(button=btn)
                     except Exception as e:
-                        logger.warning(f"Click failed: {e}")
+                        logger.debug(f"mousedown failed: {e}")
+
+            elif msg.get("type") == "mouseup":
+                page = get_page()
+                if page:
+                    btn = {0: "left", 1: "middle", 2: "right"}.get(msg.get("button", 0), "left")
+                    try:
+                        await page.mouse.up(button=btn)
+                    except Exception as e:
+                        logger.debug(f"mouseup failed: {e}")
+
+            elif msg.get("type") == "click":
+                page = get_page()
+                if page:
+                    btn = {0: "left", 1: "middle", 2: "right"}.get(msg.get("button", 0), "left")
+                    try:
+                        await page.mouse.click(msg["x"], msg["y"], button=btn)
+                    except Exception as e:
+                        logger.debug(f"click failed: {e}")
+
+            elif msg.get("type") == "mousemove":
+                page = get_page()
+                if page:
+                    try:
+                        await page.mouse.move(msg["x"], msg["y"])
+                    except Exception as e:
+                        logger.debug(f"mousemove failed: {e}")
+
+            elif msg.get("type") == "wheel":
+                page = get_page()
+                if page:
+                    try:
+                        await page.mouse.wheel(msg.get("deltaX", 0), msg.get("deltaY", 0))
+                    except Exception as e:
+                        logger.debug(f"wheel failed: {e}")
+
+            elif msg.get("type") == "keydown":
+                page = get_page()
+                if page:
+                    key = msg.get("key", "")
+                    try:
+                        mods = msg.get("modifiers", {})
+                        combo = ""
+                        if mods.get("ctrl"):  combo += "Control+"
+                        if mods.get("alt"):   combo += "Alt+"
+                        if mods.get("shift"): combo += "Shift+"
+                        if mods.get("meta"):  combo += "Meta+"
+
+                        if len(key) == 1:
+                            await page.keyboard.type(key)
+                        else:
+                            special = {
+                                "Enter": "Enter", "Backspace": "Backspace", "Tab": "Tab",
+                                "Escape": "Escape", "ArrowLeft": "ArrowLeft", "ArrowRight": "ArrowRight",
+                                "ArrowUp": "ArrowUp", "ArrowDown": "ArrowDown",
+                                "Delete": "Delete", "Home": "Home", "End": "End",
+                                "PageUp": "PageUp", "PageDown": "PageDown", " ": "Space",
+                            }
+                            mapped = special.get(key, key)
+                            await page.keyboard.press(combo + mapped)
+                    except Exception as e:
+                        logger.debug(f"keydown failed: {e}")
+
+            elif msg.get("type") == "navigate":
+                page = get_page()
+                if page:
+                    action = msg.get("action")
+                    try:
+                        if action == "back":
+                            await page.go_back()
+                        elif action == "forward":
+                            await page.go_forward()
+                        elif action == "refresh":
+                            await page.reload()
+                        elif action == "goto":
+                            url = msg.get("url", "")
+                            if url and not url.startswith("http"):
+                                url = "https://" + url
+                            if url:
+                                await page.goto(url, wait_until="domcontentloaded")
+                    except Exception as e:
+                        logger.debug(f"navigate failed: {e}")
 
             elif msg.get("type") == "force_continue":
                 sess = active_sessions.get(session_id, {})
@@ -328,12 +402,15 @@ async def websocket_endpoint(websocket: WebSocket):
                     ce.set()
 
             elif msg.get("type") == "stop":
-                # If paused, unblock the wait so run_agent can clean up
                 ce = active_sessions.get(session_id, {}).get("continue_event")
                 if ce:
                     ce.set()
                 agent = active_sessions.get(session_id, {}).get("agent")
                 if agent:
+                    try:
+                        await agent.browser.stop_screencast()
+                    except Exception:
+                        pass
                     try:
                         await agent.browser.close()
                     except Exception:
@@ -350,6 +427,10 @@ async def websocket_endpoint(websocket: WebSocket):
     finally:
         agent = active_sessions.pop(session_id, {}).get("agent")
         if agent:
+            try:
+                await agent.browser.stop_screencast()
+            except Exception:
+                pass
             try:
                 await agent.browser.close()
             except Exception:

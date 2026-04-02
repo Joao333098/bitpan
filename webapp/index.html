@@ -483,6 +483,13 @@
         showSpinner(true);
         break;
 
+      case 'live_screenshot':
+        if (msg.screenshot) showScreenshot(msg.screenshot);
+        if (msg.url && msg.url !== 'about:blank') {
+          document.getElementById('urlBar').textContent = msg.url;
+        }
+        break;
+
       case 'step':
         showSpinner(false);
         document.getElementById('stepBadge').textContent = `Step ${msg.step}`;

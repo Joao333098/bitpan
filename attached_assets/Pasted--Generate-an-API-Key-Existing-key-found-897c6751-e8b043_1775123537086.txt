@@ -1,0 +1,1037 @@
+
+Generate an API Key
+
+Existing key found: 897c6751-****-****-****-e8b0437fd845
+Regenerate key
+2
+Make Your First Call
+
+cURL
+python
+javascript
+java
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="<Nova API Key>",
+    base_url="https://api.nova.amazon.com/v1"
+)
+
+response = client.chat.completions.create(
+    model="nova-2-lite-v1",
+    messages=[{
+            "role": "system",
+            "content": "You are a helpful assistant"
+        },
+        {
+            "role": "user",
+            "content": "Hello! How are you?"
+        },
+    ],
+    stream=False
+)
+
+print(response.choices[0].message.content)
+
+Sample success response:
+
+{
+    "id": "chatcmpl-fcc6f5ed-7588-4e62-9807-fd8de75545e6",
+    "object": "chat.completion",
+    "created": 1759157259,
+    "model": "Nova 2 Lite",
+    "choices": [
+        {
+            "finish_reason": "stop",
+            "index": 0,
+            "message": {
+                "content": "Hello! It's great to have you here. How can I assist you today? ",
+                "role": "assistant"
+            }
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 2,
+        "completion_tokens": 16,
+        "total_tokens": 18
+    }
+}
+Available Models
+Access our latest reasoning models, Nova 2 Lite and Nova 2 Pro, our latest speech to speech model, Nova 2 Sonic, and all of our Nova 1 models via API.
+
+Amazon Nova 2 Lite
+Enhanced version of Nova Lite with improved reasoning capabilities, extended thinking support, and better performance across multimodal tasks.
+Learn more
+Amazon Nova 2 Sonic
+Our second generation speech-to-speech model for real-time conversational AI, that offers best-in-class streaming speech understanding, instruction following and tool invocation accuracy.
+Learn more
+Amazon Nova Micro
+A text-only model with the lowest latency at a very low cost. It has a max token capacity of 128k, supports 200+ languages, and can be fine-tuned.
+Learn more
+Amazon Nova Lite
+A multimodal model that processes image, video, and text with lightning-fast speed. Max token of 300k, supports 200+ languages, and can be fine-tuned.
+Learn more
+Amazon Nova Pro
+Our best combination of accuracy, speed, and cost for a wide range of tasks. It has a max token of 300k, supports 200+ languages, and can be fine-tuned.
+Learn more
+Amazon Nova Premier
+Our most capable model designed for complex tasks and serves as a teacher for model distillation. It has a max token of 1M and supports 200+ languages.
+Learn more
+Here is the list of all supported Models and their respective Rate limits. Requests to Agents via the API are counted against the model they are built with. For higher limits, migrate to using Amazon Bedrock.
+
+Model	Model ID	RPM	RPD
+Nova 2 Lite	nova-2-lite-v1	20	500
+Nova 2 Sonic	nova-2-sonic-v1	5 (concurrent connections)	20 (sessions per day)
+Nova Micro	nova-micro-v1	5	250
+Nova Lite	nova-lite-v1	5	250
+Nova Pro	nova-pro-v1	5	250
+Nova Premier	nova-premier-v1	2	50
+Nova Act*	Read more	300	5000
+Model User Guide
+Chat Completions API
+
+Text Generation
+
+Single Turn Request
+
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="<NOVA_API_KEY>",
+    base_url="https://api.nova.amazon.com/v1"
+)
+
+response = client.chat.completions.create(
+    model="nova-2-lite-v1",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant"},
+        {"role": "user", "content": "Explain quantum computing in simple terms"}
+    ],
+    temperature=0.7,
+    max_tokens=500
+)
+
+print(response.choices[0].message.content)'
+
+Multi-Turn Conversation
+
+messages = [
+    {"role": "user", "content": "Tell me about machine learning"},
+    {"role": "assistant", "content": "Machine learning is a subset of AI..."},
+    {"role": "user", "content": "What are its main applications?"}
+]
+
+response = client.chat.completions.create(
+    model="nova-2-lite-v1",
+    messages=messages
+)
+
+Streaming Responses
+
+response = client.chat.completions.create(
+    model="nova-2-lite-v1",
+    messages=[{"role": "user", "content": "Write a short story"}],
+    stream=True,
+    stream_options={"include_usage": True}
+)
+
+for chunk in response:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="", flush=True)
+
+Multimodal Understanding
+
+Image Understanding
+Formats: PNG, JPEG, WEBP, GIF
+Size: Up to 25 MB per request
+Limit: 10 images per request
+Video Understanding
+Formats: MP4, MOV, MKV, WEBM
+Size: Up to 25 MB (or 1 GB via S3)
+Duration: Up to 30 seconds
+Doc Understanding
+Formats: CSV, TXT, XLS, HTML, DOC, PDF
+Size: 4.5 MB file, 25 MB request
+Limit: 5 documents per request
+Image Analysis
+
+response = client.chat.completions.create(
+    model="nova-2-lite-v1",
+    messages=[{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "What's in this image?"},
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": "https://example.com/image.jpg"
+                }
+            }
+        ]
+    }]
+)
+
+Base64 Image Input
+
+import base64
+
+with open("image.jpg", "rb") as f:
+    image_data = base64.b64encode(f.read()).decode()
+
+response = client.chat.completions.create(
+    model="nova-2-lite-v1",
+    messages=[{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "Describe this image"},
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/jpeg;base64,{image_data}"
+                }
+            }
+        ]
+    }]
+)
+
+Tool Calling
+
+Define and Use Tools
+
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get current weather for a location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "City and country, e.g. Paris, France"
+                    },
+                    "units": {
+                        "type": "string",
+                        "enum": ["celsius", "fahrenheit"]
+                    }
+                },
+                "required": ["location"]
+            }
+        }
+    }
+]
+
+response = client.chat.completions.create(
+    model="nova-2-lite-v1",
+    messages=[{"role": "user", "content": "What's the weather in Tokyo?"}],
+    tools=tools,
+    tool_choice="auto"
+)
+
+# Handle tool calls
+if response.choices[0].message.tool_calls:
+    for tool_call in response.choices[0].message.tool_calls:
+        function_name = tool_call.function.name
+        arguments = json.loads(tool_call.function.arguments)
+        # Execute function and return results
+
+Built-in Tools
+
+response = client.chat.completions.create(
+    model="nova-2-lite-v1",
+    messages=[{"role": "user", "content": "Search for recent AI news"}],
+    extra_body={ 
+        "system_tools" : ["nova_grounding", "nova_code_interpreter"]  
+        }
+)
+
+Tool	Description
+nova_grounding	Web search and grounding
+nova_code_interpreter	Python code execution
+Extended Reasoning
+
+Enable extended thinking for complex problem-solving:
+
+response = client.chat.completions.create(
+    model="nova-2-lite-v1",
+    messages=[{
+        "role": "user",
+        "content": "Solve this logic puzzle: If all roses are flowers..."
+    }],
+    reasoning_effort="high"  # Options:"disabled", "low", "medium", "high"
+)
+
+Reasoning Effort Level	Performance
+low	Fast, basic reasoning
+medium	Balanced reasoning and speed
+high	Deep, thorough analysis
+Request Parameters
+
+Core Parameters
+
+Parameter	Type	Description	Default
+model	string	Model ID	Required
+messages	array	Conversation messages	Required
+max_tokens	integer	Maximum tokens to generate	Dynamic
+temperature	float	Randomness (0.0-1.0)	0.7
+top_p	float	Nucleus sampling (0.0-1.0)	0.9
+stream	boolean	Enable streaming	FALSE
+tools	array	Function definitions	null
+tool_choice	string/object	Tool selection strategy	"auto"
+reasoning_effort	string	Reasoning level	null
+system_tools	array	Built-in tools to enable	null
+Advanced Parameters
+
+Parameter	Type	Description
+stream_options	object	Streaming configuration
+metadata	object	Request metadata
+user	string	End-user identifier
+Request Headers
+
+Authorization: Bearer NOVA_API_KEY
+Content-Type: application/json
+Response Headers
+
+novaapi-processing-ms: Processing time in milliseconds
+novaapi-version: API version
+x-request-id: Unique request identifier
+x-ratelimit-limit-requests: Rate limit
+x-ratelimit-remaining-requests: Remaining requests
+x-ratelimit-reset-requests: Reset timestamp
+Response Format
+
+Standard Response
+
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion",
+  "created": 1234567890,
+  "model": "nova-2-lite-v1",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Response text here"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 10,
+    "completion_tokens": 50,
+    "total_tokens": 60
+  }
+}
+
+Finish Reasons
+
+Nova API Finish Reason	Bedrock Stop Reason	Explanation
+stop	default	Natural completion
+length	MAX_TOKENS	Reached max_tokens limit
+tool_calls	TOOL_USE	Model called a tool
+content_filter	CONTENT_FILTERED, GUARDRAIL_INTERVENED	Content filtered
+Error Handling
+
+Error Response Format
+
+{
+  "error": {
+    "message": "Invalid API key",
+    "type": "authentication_error",
+    "code": "invalid_api_key"
+  }
+}
+Common Error Codes
+
+Status	Error Type	Description
+400	invalid_request_error	Malformed request
+401	authentication_error	Invalid API key
+404	not_found_error	Model not found
+429	rate_limit_error	Rate limit exceeded
+500	api_error	Server error
+Error Handling Example
+
+from openai import OpenAI, APIError, RateLimitError
+
+client = OpenAI(
+    api_key="<NOVA_API_KEY>",
+    base_url="https://api.nova.amazon.com/v1"
+)
+
+try:
+    response = client.chat.completions.create(
+        model="nova-2-lite-v1",
+        messages=[{"role": "user", "content": "Hello"}]
+    )
+except RateLimitError:
+    print("Rate limit exceeded. Please wait.")
+except APIError as e:
+    print(f"API error: {e}")
+
+Realtime API
+
+Connect via WebSocket
+
+Below is a working example that connects to the Nova 2 Sonic model, sets the voice and system instructions, sends a text message, receives a spoken audio response and saves it to a wav file.
+
+#!/usr/bin/env python3
+"""
+Usage:
+    export NOVA_API_KEY=your_key
+    python nova_client.py
+"""
+
+import asyncio
+import base64
+import json
+import ssl
+import wave
+import array
+import math
+import os
+
+try:
+    import websockets
+except ImportError:
+    print("Install: pip install websockets")
+    exit(1)
+
+SAMPLE_RATE = 24000
+CHANNELS = 1
+SAMPLE_WIDTH = 2
+
+def generate_silence(duration_ms: int) -> bytes:
+    """Generate silence"""
+    samples = (SAMPLE_RATE * duration_ms) // 1000
+    return bytes(samples * SAMPLE_WIDTH)
+
+async def main():
+    api_key = os.getenv("NOVA_API_KEY")
+    if not api_key:
+        print("Error: Set NOVA_API_KEY environment variable")
+        exit(1)
+    
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    
+    url = "wss://api.nova.amazon.com/v1/realtime?model=nova-2-sonic-v1"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Origin": "https://api.nova.amazon.com"
+    }
+    
+    print("Connecting to Nova API...")
+    
+    async with websockets.connect(url, ssl=ssl_context, additional_headers=headers) as ws:
+        print("✓ Connected")
+        
+        # Wait for session.created
+        event = json.loads(await ws.recv())
+        assert event["type"] == "session.created"
+        print(f"← {event['type']}")
+        
+        # Configure session
+        await ws.send(json.dumps({
+            "type": "session.update",
+            "session": {
+                "type": "realtime",
+                "instructions": "Respond briefly to greetings.",
+                "audio": {
+                    "input": {
+                        "turn_detection": {
+                            "threshold": 0.5
+                        }
+                    },
+                    "output": {
+                        "voice": "olivia"
+                    }
+                }
+            }
+        }))
+        
+        # Wait for session.updated
+        event = json.loads(await ws.recv())
+        assert event["type"] == "session.updated"
+        print(f"← {event['type']}")
+        
+        # Start continuous silence task (like test does)
+        async def send_silence():
+            silence = base64.b64encode(generate_silence(100)).decode('utf-8')
+            while True:
+                try:
+                    await ws.send(json.dumps({
+                        "type": "input_audio_buffer.append",
+                        "audio": silence
+                    }))
+                    await asyncio.sleep(0.1)
+                except:
+                    break
+        
+        silence_task = asyncio.create_task(send_silence())
+        print("✓ Silence stream started")
+        
+        # Send text message instead of audio (more reliable)
+        print("\nSending text message: 'hello how are you'")
+        await ws.send(json.dumps({
+            "type": "conversation.item.create",
+            "item": {
+                "type": "message",
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": "hello how are you"
+                    }
+                ]
+            }
+        }))
+        
+        # Collect response
+        response_audio = bytearray()
+        timeout = 15.0
+        start = asyncio.get_event_loop().time()
+        
+        print("\nWaiting for response...")
+        while asyncio.get_event_loop().time() - start < timeout:
+            try:
+                event = json.loads(await asyncio.wait_for(ws.recv(), timeout=2.0))
+                event_type = event["type"]
+                
+                print(f"← {event_type}")
+                
+                if event_type == "error":
+                    print(f"❌ ERROR: {json.dumps(event.get('error', {}), indent=2)}")
+                    break
+                elif event_type == "conversation.item.input_audio_transcription.completed":
+                    print(f"   User: {event.get('transcript', '')}")
+                elif event_type == "response.output_audio.delta":
+                    response_audio.extend(base64.b64decode(event["delta"]))
+                elif event_type == "response.output_audio_transcript.done":
+                    print(f"   Assistant: {event.get('transcript', '')}")
+                elif event_type == "response.done":
+                    break
+            except asyncio.TimeoutError:
+                print("⏱️  Waiting...")
+            except Exception as e:
+                print(f"❌ Exception: {e}")
+                break
+        
+        silence_task.cancel()
+        
+        # Save audio
+        if response_audio:
+            with wave.open("nova_response.wav", 'wb') as wav:
+                wav.setnchannels(CHANNELS)
+                wav.setsampwidth(SAMPLE_WIDTH)
+                wav.setframerate(SAMPLE_RATE)
+                wav.writeframes(bytes(response_audio))
+            print(f"\n✅ Saved nova_response.wav ({len(response_audio)} bytes)")
+        else:
+            print("\n⚠️  No audio received")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+Client Events
+
+session.update
+
+{
+  "type": "session.update",
+  "event_id": "evt_001",
+  "session": {
+    "type": "realtime",
+    "instructions": "You are a helpful assistant.",
+    "audio": {
+      "input": {
+        "turn_detection": {
+          "threshold": 0.6
+        }
+      },
+      "output": {
+        "voice": "olivia"
+      }
+    },
+    "tools": [
+      {
+        "type": "function",
+        "name": "get_date",
+        "description": "Get the current date.",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "max_output_tokens": 3000
+  },
+  "extra_body": {
+    "temperature": 0.7,
+    "top_p": 0.9
+  }
+}
+
+input_audio_buffer.append
+
+{
+  "type": "input_audio_buffer.append",
+  "event_id": "evt_002",
+  "audio": "UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="
+}
+
+conversation.item.create (Text Message)
+
+{
+  "type": "conversation.item.create",
+  "event_id": "evt_003",
+  "item": {
+    "type": "message",
+    "role": "user",
+    "content": [
+      {
+        "type": "input_text",
+        "text": "What is the weather today?"
+      }
+    ]
+  }
+}
+
+conversation.item.create (Function Call Output)
+
+{
+  "type": "conversation.item.create",
+  "event_id": "evt_004",
+  "item": {
+    "type": "function_call_output",
+    "call_id": "call_abc123",
+    "output": "{\"date\": \"2026-02-03T11:39:13-08:00\"}"
+  }
+}
+
+conversation.item.retrieve
+
+{
+  "type": "conversation.item.retrieve",
+  "event_id": "evt_005",
+  "item_id": "item_abc123"
+}
+
+Server Events
+
+session.created
+
+{
+  "type": "session.created",
+  "event_id": "event_abc123",
+  "session": {
+    "type": "realtime",
+    "object": "realtime.session",
+    "id": "sess_xyz789",
+    "model": "amazon.nova-2-sonic-v1:0",
+    "output_modalities": ["audio"],
+    "tools": [],
+    "tool_choice": "auto",
+    "max_output_tokens": 3000,
+    "tracing": null,
+    "prompt": null,
+    "expires_at": 1738627153,
+    "audio": {
+      "input": {
+        "format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "transcription": {},
+        "noise_reduction": null,
+        "turn_detection": {
+          "type": "server_vad",
+          "threshold": 0.5,
+          "prefix_padding_ms": 300,
+          "silence_duration_ms": 200,
+          "idle_timeout_ms": null,
+          "create_response": true,
+          "interrupt_response": true
+        }
+      },
+      "output": {
+        "format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "voice": "matthew",
+        "speed": 1.0
+      }
+    },
+    "include": null
+  }
+}
+
+session.updated
+
+{
+  "type": "session.updated",
+  "event_id": "event_def456",
+  "session": {
+    "type": "realtime",
+    "object": "realtime.session",
+    "id": "sess_xyz789",
+    "model": "amazon.nova-2-sonic-v1:0",
+    "output_modalities": ["audio"],
+    "instructions": "You are a helpful assistant.",
+    "tools": [
+      {
+        "type": "function",
+        "name": "get_date",
+        "description": "Get the current date.",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": []
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "max_output_tokens": 3000,
+    "audio": {
+      "input": {
+        "format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "turn_detection": {
+          "type": "server_vad",
+          "threshold": 0.6,
+          "prefix_padding_ms": 300,
+          "silence_duration_ms": 200,
+          "create_response": true,
+          "interrupt_response": true
+        }
+      },
+      "output": {
+        "format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "voice": "olivia",
+        "speed": 1.0
+      }
+    }
+  }
+}
+
+conversation.item.added
+
+{
+  "type": "conversation.item.added",
+  "event_id": "event_ghi789",
+  "previous_item_id": "item_prev123",
+  "item": {
+    "id": "item_abc123",
+    "type": "message",
+    "status": "completed",
+    "role": "user",
+    "content": [
+      {
+        "type": "input_text",
+        "text": "What is the weather?"
+      }
+    ]
+  }
+}
+
+conversation.item.done
+
+{
+  "type": "conversation.item.done",
+  "event_id": "event_jkl012",
+  "previous_item_id": "item_prev456",
+  "item": {
+    "id": "item_def456",
+    "type": "message",
+    "status": "completed",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "output_audio",
+        "transcript": "The weather is sunny today."
+      }
+    ]
+  }
+}
+
+conversation.item.retrieved
+
+{
+  "type": "conversation.item.retrieved",
+  "event_id": "event_mno345",
+  "item": {
+    "id": "item_ghi789",
+    "object": "realtime.item",
+    "type": "message",
+    "status": "completed",
+    "role": "user",
+    "content": [
+      {
+        "type": "input_audio",
+        "transcript": "What is the date?",
+        "audio": "UklGRiQAAA...",
+        "format": "pcm16"
+      }
+    ]
+  }
+}
+
+Audio inputs
+
+Streaming audio input
+
+import base64
+import json
+import struct
+import soundfile as sf
+from websocket import create_connection
+
+# ... create websocket-client named ws ...
+
+def float_to_16bit_pcm(float32_array):
+    clipped = [max(-1.0, min(1.0, x)) for x in float32_array]
+    pcm16 = b''.join(struct.pack('<h', int(x * 32767)) for x in clipped)
+    return pcm16
+
+def base64_encode_audio(float32_array):
+    pcm_bytes = float_to_16bit_pcm(float32_array)
+    encoded = base64.b64encode(pcm_bytes).decode('ascii')
+    return encoded
+
+files = [
+    './path/to/sample1.wav',
+    './path/to/sample2.wav',
+    './path/to/sample3.wav'
+]
+
+for filename in files:
+    data, samplerate = sf.read(filename, dtype='float32')
+    channel_data = data[:, 0] if data.ndim > 1 else data
+    base64_chunk = base64_encode_audio(channel_data)
+
+    # Send the client event
+    event = {
+        "type": "input_audio_buffer.append",
+        "audio": base64_chunk
+    }
+    ws.send(json.dumps(event))
+
+Function Calling
+
+Configure callable functions
+
+{
+    "type": "session.update",
+    "session": {
+        "tools": [
+            {
+                "type": "function",
+                "name": "generate_horoscope",
+                "description": "Give today's horoscope for an astrological sign.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "sign": {
+                            "type": "string",
+                            "description": "The sign for the horoscope.",
+                            "enum": [
+                                "Aries",
+                                "Taurus",
+                                "Gemini",
+                                "Cancer",
+                                "Leo",
+                                "Virgo",
+                                "Libra",
+                                "Scorpio",
+                                "Sagittarius",
+                                "Capricorn",
+                                "Aquarius",
+                                "Pisces"
+                            ]
+                        }
+                    },
+                    "required": ["sign"]
+                }
+            }
+        ],
+        "tool_choice": "auto"
+    }
+}
+
+Error Handling
+
+const event = {
+    event_id: "my_awesome_event",
+    type: "scooby.dooby.doo",
+};
+
+dataChannel.send(JSON.stringify(event));
+
+{
+    "type": "invalid_request_error",
+    "code": "invalid_value",
+    "message": "Invalid value: 'scooby.dooby.doo' ...",
+    "param": "type",
+    "event_id": "my_awesome_event"
+}
+
+Interruption and Truncation
+
+{
+    "type": "conversation.item.truncate",
+    "item_id": "item_1234", # this is the item ID of the model's last response
+    "content_index": 0,
+    "audio_end_ms": 1500 # truncate audio after 1.5 seconds
+}
+
+API Reference
+Endpoints
+
+Create chat completion
+
+POST https://api.nova.amazon.com/v1/chat/completions
+Create realtime call
+
+POST https://api.nova.amazon.com/v1/realtime/calls
+List models
+
+GET https://api.nova.amazon.com/v1/models
+List and describe the various models, your agents and published community agents available in the API. For each model, basic information is provided such as the owner, tools supported and allowed max tokens. Amazon Nova models have "owned_by" set to "amazon". Your own agents and community agents will have ids that start with "AGENT-".
+
+curl -L 'https://api.nova.amazon.com/v1/models' \
+-H 'Authorization: Bearer YOUR_API_KEY' \
+{
+    "object": "list",
+    "data": [
+        {
+            "created": 1686955326,
+            "description": "Example description for model 1",
+            "display name": "Model 1",
+            "id": "model1",
+            "owned_by": "amazon",
+            "type": "model"
+        },
+        {
+            "created": 1723855326,
+            "description": "Example description for model 2",
+            "display name": "Model 2",
+            "id": "model2",
+            "owned_by": "amazon",
+            "type": "model"
+        },
+        { ... },
+        {
+            "created": 1747822187,
+            "description": "Example description for published agent 1",
+            "display name": "Agent Name 1",
+            "id": "agent1",
+            "owned_by": "developeralias1",
+            "type": "agent"
+        },
+        { ... },
+    ]
+}
+The model object
+
+created integer
+The Unix timestamp (in seconds) when the model was created.
+description string
+The model description, that will be displayed in Chat experiences or API endpoints.
+display_name string
+The model name, that will be displayed in Chat experiences or API endpoints.
+id string
+The model identifier, which can be referenced in API endpints.
+owned_by string
+The alias of the developer who built the model. Amazon Nova models have owned_by set to "amazon".
+type string
+The model type, which is model or agent
+
+OpenAI Compatible Chat Completions API Support
+
+Fields supported in the request:
+
+Field Name	Support
+messages	Supported
+model	Supported
+max_completion_tokens	Supported
+max_tokens	Supported
+metadata	Supported
+reasoning_effort	Supported
+stream	Supported
+stream_options	Supported
+temperature	Supported
+tool_choice	Supported
+tools	Supported
+top_p	Supported
+system_tools	Supported
+web_search_options	Ignored
+audio	Ignored
+frequency_penalty	Ignored
+function_call	Ignored
+functions	Ignored
+logit_bias	Ignored
+modalities	Ignored
+n	Ignored
+parallel_tool_calls	Ignored
+prediction	Ignored
+presence_penalty	Ignored
+response_format	Ignored
+safety_identifier	Ignored
+seed	Ignored
+service_tier	Ignored
+stop	Ignored
+store	Ignored
+top_logprobs	Ignored
+user	Ignored
+verbosity	Ignored
+logprobs	Ignored
+Fields supported in the messages array:
+
+Role	Field	Support
+Developer role		Not Supported
+System role		Supported
+User role		Supported
+Text	Supported
+Image_url	Supported
+File	Supported
+input_audio	Supported
+Assistant role		Supported
+content -> Text	Supported
+content -> refusal	Ignored
+tool_calls	Supported
+function_call	Ignored
+audio	Ignored
+refusal	Ignored
+Tool role		
+content -> Text	Supported
+content -> Array	Not Supported
+tool_call_id	Supported
+tool_choice	Supported
+name	Ignored
+Function role		Not Supported
+OpenAI Compatible Realtime API Support
+
+Feature	Nova Realtime API
+Connection Methods	WebSocket (Supported)
+WebRTC (Unsupported)
+SIP (Unsupported)
+Voice Activity Detection (VAD)	VAD ON (Supported via Sonic)
+VAD OFF (Unsupported)
+Fine Grain Conversation Management	Unsupported
+Barge In	Supported
+Tool (Function) Calls	Supported
+MCP Tool Calls	Unsupported
+Session Length	Up to 8 min
+Transcription Mode (voice → text)	Unsupported
+Supported Input(s)	Voice, Text
+Supported Ouput(s)	Voice, Text

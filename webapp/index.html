@@ -2,480 +2,567 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Index Agent</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
     :root {
-      --bg:       #0f1117;
-      --panel:    #161b27;
-      --card:     #1e2535;
-      --border:   #2a3347;
-      --accent:   #4f8ef7;
-      --green:    #34d399;
-      --red:      #f87171;
-      --amber:    #fbbf24;
-      --purple:   #a78bfa;
-      --text:     #e2e8f0;
-      --sub:      #94a3b8;
-      --muted:    #475569;
-      --radius:   14px;
+      --bg:      #0c0e14;
+      --surface: #13161f;
+      --card:    #1a1e2e;
+      --border:  #252b3d;
+      --accent:  #6366f1;
+      --accent2: #8b5cf6;
+      --blue:    #3b82f6;
+      --green:   #10b981;
+      --red:     #ef4444;
+      --amber:   #f59e0b;
+      --purple:  #a78bfa;
+      --text:    #f1f5f9;
+      --sub:     #94a3b8;
+      --muted:   #475569;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-top:    env(safe-area-inset-top, 0px);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-    body {
+    html, body {
+      height: 100%; height: 100dvh;
       font-family: 'Inter', -apple-system, sans-serif;
       background: var(--bg);
       color: var(--text);
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
       overflow: hidden;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ── TOP BAR ── */
+    /* ── APP SHELL ── */
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      height: 100dvh;
+    }
+
+    /* ── TOPBAR ── */
     .topbar {
       display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 10px 20px;
-      background: var(--panel);
+      gap: 10px;
+      padding: calc(var(--safe-top) + 12px) 16px 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+    .logo-mark {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .topbar-info { flex: 1; min-width: 0; }
+    .topbar-name { font-size: 15px; font-weight: 600; letter-spacing: -.3px; }
+    .topbar-sub  { font-size: 11px; color: var(--sub); margin-top: 1px; }
+    .status-pill {
+      display: flex; align-items: center; gap: 5px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 99px; padding: 4px 11px;
+      font-size: 11px; font-weight: 500; color: var(--sub);
+      flex-shrink: 0;
+    }
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--muted); transition: .3s;
+    }
+    .status-dot.on  { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 1.5s infinite; }
+    .status-dot.err { background: var(--red); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+    /* ── TAB BAR ── */
+    .tabbar {
+      display: flex;
+      background: var(--surface);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
-    .topbar-logo {
-      font-size: 18px;
-      width: 32px; height: 32px;
-      background: linear-gradient(135deg, #4f8ef7, #7c3aed);
-      border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
+    .tab {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 3px; padding: 10px 8px;
+      font-size: 10px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .5px;
+      cursor: pointer; transition: .2s;
+      border-bottom: 2px solid transparent;
+      position: relative;
     }
-    .topbar-title { font-size: 14px; font-weight: 600; letter-spacing: -.3px; }
-    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-    .badge {
-      font-size: 11px; font-weight: 500; padding: 3px 10px;
-      border-radius: 99px; border: 1px solid var(--border);
-      color: var(--sub); background: var(--card);
+    .tab .tab-icon { font-size: 18px; }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-badge {
+      position: absolute; top: 6px; right: calc(50% - 20px);
+      background: var(--red); color: #fff;
+      font-size: 9px; font-weight: 700;
+      width: 16px; height: 16px; border-radius: 50%;
+      display: none; align-items: center; justify-content: center;
     }
-    .status-wrap { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--sub); }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: .3s; }
-    .dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); animation: blink 1.4s infinite; }
-    .dot.err { background: var(--red); }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .tab-badge.show { display: flex; }
 
-    /* ── MAIN ── */
-    main { flex: 1; display: grid; grid-template-columns: 1fr 380px; overflow: hidden; }
+    /* ── CONTENT ── */
+    .content {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Panel */
+    .panel {
+      position: absolute; inset: 0;
+      display: none; flex-direction: column;
+      overflow: hidden;
+    }
+    .panel.active { display: flex; }
 
     /* ── BROWSER PANEL ── */
-    .browser-panel {
-      display: flex; flex-direction: column;
-      border-right: 1px solid var(--border);
-      overflow: hidden;
-      background: #09090f;
-    }
-
-    /* Browser chrome bar */
-    .browser-bar {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 14px;
-      background: var(--panel);
+    /* Mini browser chrome */
+    .browser-chrome {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 12px;
+      background: var(--surface);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
     .nav-btn {
-      width: 28px; height: 28px;
-      border: none; border-radius: 7px;
+      width: 32px; height: 32px;
+      border: none; border-radius: 8px;
       background: transparent; color: var(--muted);
-      cursor: pointer; font-size: 14px;
+      font-size: 15px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: .15s; flex-shrink: 0;
     }
-    .nav-btn:hover:not(:disabled) { background: var(--card); color: var(--text); }
-    .nav-btn:disabled { opacity: .25; cursor: default; }
-    .url-field {
-      flex: 1; display: flex; align-items: center; gap: 7px;
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 8px; padding: 5px 11px;
-      font-size: 12px; color: var(--sub);
-      transition: border-color .2s;
+    .nav-btn:active { background: var(--border); }
+    .nav-btn:disabled { opacity: .2; }
+    .url-pill {
+      flex: 1; display: flex; align-items: center; gap: 6px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 99px; padding: 6px 14px;
+      font-size: 12px; color: var(--sub); overflow: hidden;
+      min-width: 0;
     }
-    .url-field:focus-within { border-color: var(--accent); }
-    .lock { font-size: 10px; flex-shrink: 0; }
-    .lock.ok  { color: var(--green); }
-    .lock.no  { color: var(--muted); }
-    #urlInput {
+    .url-pill input {
       flex: 1; background: none; border: none; outline: none;
       font-size: 12px; color: var(--text); font-family: inherit;
+      min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    #urlInput::placeholder { color: var(--muted); }
-    .bar-right { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
-    .live-chip {
-      font-size: 10px; font-weight: 600;
-      padding: 2px 8px; border-radius: 99px;
-      background: rgba(52,211,153,.1); border: 1px solid rgba(52,211,153,.25);
-      color: var(--green); display: none; white-space: nowrap;
-      animation: blink 1.4s infinite;
-    }
-    .step-chip {
-      font-size: 10px; font-weight: 600;
-      padding: 2px 8px; border-radius: 99px;
-      background: rgba(79,142,247,.1); border: 1px solid rgba(79,142,247,.2);
-      color: var(--accent); display: none; white-space: nowrap;
+    .url-pill input::placeholder { color: var(--muted); }
+    .lock-icon { font-size: 11px; flex-shrink: 0; }
+    .live-badge {
+      background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.25);
+      color: var(--green); font-size: 9px; font-weight: 700;
+      padding: 2px 7px; border-radius: 99px; white-space: nowrap;
+      display: none; animation: pulse 1.5s infinite;
     }
 
-    /* Canvas */
-    .canvas-shell {
+    /* Canvas area */
+    .canvas-area {
       flex: 1; position: relative;
       display: flex; align-items: center; justify-content: center;
-      overflow: hidden;
+      overflow: hidden; background: #080b12;
+      touch-action: none;
     }
     #liveCanvas {
       max-width: 100%; max-height: 100%;
-      display: block; cursor: crosshair;
+      display: block; touch-action: none;
     }
-    .idle-msg {
+    .browser-idle {
       position: absolute; inset: 0;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      gap: 12px; color: var(--muted); pointer-events: none;
-      text-align: center;
+      gap: 14px; color: var(--muted);
+      pointer-events: none; text-align: center; padding: 30px;
     }
-    .idle-msg svg { opacity: .12; }
-    .idle-msg p { font-size: 13px; opacity: .4; line-height: 1.6; }
-    .kb-hint {
-      position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
-      background: rgba(79,142,247,.15); border: 1px solid rgba(79,142,247,.3);
-      border-radius: 8px; padding: 5px 14px;
-      font-size: 11px; color: var(--accent);
-      display: none;
-    }
-    .canvas-shell.kb-on .kb-hint { display: block; }
-    .canvas-shell.kb-on #liveCanvas { outline: 2px solid rgba(79,142,247,.4); }
-
-    /* ── RIGHT PANEL ── */
-    .right-panel { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
-
-    /* Task input */
-    .task-box {
-      padding: 16px;
-      border-bottom: 1px solid var(--border);
-      background: var(--panel);
-      flex-shrink: 0;
-    }
-    .task-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 8px; }
-    .task-row { display: flex; gap: 8px; }
-    textarea {
-      flex: 1; background: var(--bg); border: 1px solid var(--border);
-      border-radius: 10px; color: var(--text);
-      font-size: 13px; padding: 10px 14px; line-height: 1.5;
-      resize: none; height: 70px; font-family: inherit;
-      transition: border-color .2s;
-    }
-    textarea:focus { outline: none; border-color: var(--accent); }
-    textarea::placeholder { color: var(--muted); }
-    textarea:disabled { opacity: .45; cursor: not-allowed; }
-    .action-col { display: flex; flex-direction: column; gap: 6px; }
-    .btn {
-      height: 32px; padding: 0 14px; border-radius: 9px;
-      font-size: 12px; font-weight: 600; cursor: pointer; border: none;
-      display: flex; align-items: center; justify-content: center; gap: 5px;
-      transition: all .18s; white-space: nowrap; font-family: inherit;
-    }
-    .btn-run  { background: var(--accent); color: #fff; min-width: 72px; }
-    .btn-run:hover:not(:disabled)  { filter: brightness(1.12); transform: translateY(-1px); }
-    .btn-run:disabled  { opacity: .35; cursor: default; transform: none; }
-    .btn-force { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
-    .btn-force:hover { filter: brightness(1.1); transform: translateY(-1px); }
-    .btn-stop { background: transparent; border: 1px solid rgba(248,113,113,.3); color: var(--red); }
-    .btn-stop:hover:not(:disabled) { background: rgba(248,113,113,.1); }
-    .btn-stop:disabled { opacity: .3; cursor: default; }
-
-    .quick-tasks { margin-top: 10px; }
-    .quick-label { font-size: 10px; color: var(--muted); margin-bottom: 6px; }
-    .quick-row { display: flex; flex-wrap: wrap; gap: 5px; }
-    .quick-chip {
-      font-size: 11px; padding: 3px 10px; border-radius: 99px;
+    .browser-idle-icon {
+      width: 72px; height: 72px;
       background: var(--card); border: 1px solid var(--border);
-      color: var(--sub); cursor: pointer; transition: .15s;
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; opacity: .4;
     }
-    .quick-chip:hover { border-color: var(--accent); color: var(--accent); }
+    .browser-idle p { font-size: 13px; color: var(--muted); line-height: 1.6; max-width: 240px; }
 
-    /* ── ACTIVITY FEED ── */
-    .feed-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    .feed-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 16px;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .feed-title { font-size: 12px; font-weight: 600; color: var(--sub); }
-    .feed-clear { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 11px; padding: 2px 6px; border-radius: 5px; font-family: inherit; }
-    .feed-clear:hover { color: var(--sub); }
+    /* ── ACTIVITY PANEL ── */
+    .activity-panel { background: var(--bg); }
 
-    .feed-scroll {
-      flex: 1; overflow-y: auto; padding: 12px 16px;
-      display: flex; flex-direction: column; gap: 2px;
-      scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    .feed-list {
+      flex: 1; overflow-y: auto; padding: 16px;
+      display: flex; flex-direction: column; gap: 8px;
+      -webkit-overflow-scrolling: touch;
     }
-    .feed-scroll::-webkit-scrollbar { width: 3px; }
-    .feed-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .feed-list::-webkit-scrollbar { display: none; }
 
-    /* Feed entry — conversational style */
-    .entry {
-      display: flex; gap: 11px;
-      padding: 10px 0;
-      border-bottom: 1px solid rgba(42,51,71,.5);
-      animation: fadeUp .25s ease both;
+    /* Conversational feed card */
+    .feed-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 14px 16px;
+      animation: pop .2s ease both;
+      position: relative; overflow: hidden;
     }
-    .entry:last-child { border-bottom: none; }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes pop { from{opacity:0;transform:translateY(8px) scale(.98)} to{opacity:1;transform:none} }
 
-    .entry-dot-col { display: flex; flex-direction: column; align-items: center; padding-top: 5px; }
-    .entry-dot {
-      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-      background: var(--muted);
+    .feed-card::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 3px; border-radius: 3px 0 0 3px;
     }
-    .entry-dot.step    { background: var(--accent); }
-    .entry-dot.done    { background: var(--green); }
-    .entry-dot.error   { background: var(--red); }
-    .entry-dot.human   { background: var(--purple); }
-    .entry-dot.info    { background: var(--amber); }
-    .entry-line { width: 1px; flex: 1; background: var(--border); margin-top: 4px; min-height: 8px; }
+    .feed-card.step::before   { background: var(--accent); }
+    .feed-card.done::before   { background: var(--green); }
+    .feed-card.error::before  { background: var(--red); }
+    .feed-card.human::before  { background: var(--purple); }
+    .feed-card.info::before   { background: var(--amber); }
 
-    .entry-body { flex: 1; min-width: 0; }
-    .entry-meta {
-      font-size: 10px; color: var(--muted); margin-bottom: 3px;
-      display: flex; align-items: center; gap: 6px;
+    .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .card-tag {
+      font-size: 9px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .6px; padding: 2px 7px; border-radius: 5px;
     }
-    .entry-tag {
-      font-size: 9px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
-      padding: 1px 6px; border-radius: 4px;
+    .feed-card.step  .card-tag { background: rgba(99,102,241,.15); color: var(--accent); }
+    .feed-card.done  .card-tag { background: rgba(16,185,129,.12); color: var(--green); }
+    .feed-card.error .card-tag { background: rgba(239,68,68,.12);  color: var(--red); }
+    .feed-card.human .card-tag { background: rgba(167,139,250,.12);color: var(--purple); }
+    .feed-card.info  .card-tag { background: rgba(245,158,11,.1);  color: var(--amber); }
+    .card-time { font-size: 10px; color: var(--muted); margin-left: auto; }
+    .card-text {
+      font-size: 14px; color: var(--text); line-height: 1.55; font-weight: 400;
     }
-    .entry-tag.step  { background: rgba(79,142,247,.12); color: var(--accent); }
-    .entry-tag.done  { background: rgba(52,211,153,.12); color: var(--green); }
-    .entry-tag.error { background: rgba(248,113,113,.12); color: var(--red); }
-    .entry-tag.human { background: rgba(167,139,250,.12); color: var(--purple); }
-    .entry-tag.info  { background: rgba(251,191,36,.1); color: var(--amber); }
+    .card-text.typing::after {
+      content: '▋';
+      animation: blink-cur .7s step-end infinite;
+      color: var(--accent); margin-left: 2px; font-size: 12px;
+    }
+    @keyframes blink-cur { 0%,100%{opacity:1} 50%{opacity:0} }
 
-    .entry-text {
-      font-size: 13px; color: var(--text); line-height: 1.55;
-      font-weight: 400;
-    }
-    .entry-text.typing::after {
-      content: '|';
-      animation: cursor .8s step-end infinite;
-      color: var(--accent); margin-left: 1px;
-    }
-    @keyframes cursor { 0%,100%{opacity:1} 50%{opacity:0} }
-    .entry-time { font-size: 10px; color: var(--muted); white-space: nowrap; }
-
-    /* Empty state */
-    .empty-feed {
+    .empty-activity {
       flex: 1; display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      gap: 10px; color: var(--muted); text-align: center;
-      padding: 30px;
+      gap: 12px; text-align: center; padding: 30px;
     }
-    .empty-feed p { font-size: 12px; opacity: .4; line-height: 1.6; }
+    .empty-icon { font-size: 40px; opacity: .2; }
+    .empty-activity p { font-size: 13px; color: var(--muted); line-height: 1.6; max-width: 220px; }
 
     /* Result */
-    .result-box {
-      border-top: 1px solid var(--border);
-      background: var(--panel); padding: 12px 16px;
-      flex-shrink: 0; max-height: 120px; overflow-y: auto; display: none;
+    .result-card {
+      margin: 0 16px 16px;
+      background: rgba(16,185,129,.06); border: 1px solid rgba(16,185,129,.2);
+      border-radius: 16px; padding: 14px 16px; display: none;
     }
-    .result-box.show { display: block; }
-    .result-label { font-size: 10px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
-    .result-text { font-size: 12px; color: var(--text); line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+    .result-card.show { display: block; }
+    .result-label { font-size: 11px; font-weight: 700; color: var(--green); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+    .result-text { font-size: 13px; color: var(--text); line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
 
-    /* ── MODAL ── */
-    .modal-bg {
+    /* ── BOTTOM INPUT ── */
+    .bottom-input {
+      flex-shrink: 0;
+      padding: 12px 16px calc(var(--safe-bottom) + 12px);
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+
+    /* Quick task chips */
+    .quick-row {
+      display: flex; gap: 7px; overflow-x: auto; padding-bottom: 10px;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .quick-row::-webkit-scrollbar { display: none; }
+    .quick-chip {
+      white-space: nowrap; font-size: 12px; padding: 6px 14px;
+      border-radius: 99px; background: var(--card); border: 1px solid var(--border);
+      color: var(--sub); cursor: pointer; transition: .15s; flex-shrink: 0;
+      font-family: inherit;
+    }
+    .quick-chip:active { background: var(--border); color: var(--text); }
+
+    /* Input row */
+    .input-row {
+      display: flex; align-items: flex-end; gap: 8px;
+    }
+    .input-wrap {
+      flex: 1;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 18px; padding: 10px 16px;
+      transition: border-color .2s; display: flex; align-items: flex-end; gap: 8px;
+    }
+    .input-wrap:focus-within { border-color: var(--accent); }
+    #promptInput {
+      flex: 1; background: none; border: none; outline: none;
+      font-size: 15px; color: var(--text); font-family: inherit;
+      resize: none; max-height: 120px; min-height: 22px;
+      line-height: 1.4; overflow-y: auto;
+    }
+    #promptInput::placeholder { color: var(--muted); }
+    #promptInput:disabled { opacity: .4; }
+
+    /* Action buttons in input row */
+    .send-btn {
+      width: 44px; height: 44px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: 14px;
+      color: #fff; font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: .2s; font-family: inherit;
+    }
+    .send-btn:active { transform: scale(.93); }
+    .send-btn:disabled { opacity: .35; }
+
+    /* Sub-actions row */
+    .sub-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .sub-btn {
+      flex: 1; height: 38px; border-radius: 12px;
+      border: 1px solid var(--border); background: var(--card);
+      color: var(--sub); font-size: 12px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;
+      transition: .15s; font-family: inherit;
+    }
+    .sub-btn.force { border-color: rgba(245,158,11,.3); color: var(--amber); }
+    .sub-btn.stop  { border-color: rgba(239,68,68,.3); color: var(--red); }
+    .sub-btn:active { transform: scale(.96); }
+    .sub-btn:disabled { opacity: .3; }
+
+    /* ── HUMAN MODAL ── */
+    .modal-overlay {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,.7); backdrop-filter: blur(8px);
-      z-index: 100; display: flex; align-items: center; justify-content: center;
-      padding: 24px; animation: fadeUp .2s;
+      background: rgba(0,0,0,.75); backdrop-filter: blur(10px);
+      z-index: 200; display: flex; flex-direction: column;
+      justify-content: flex-end; animation: fadeIn .2s;
     }
-    .modal-bg.hidden { display: none; }
-    .modal {
-      background: var(--panel); border: 1px solid var(--border);
-      border-radius: 18px; width: 100%; max-width: 800px; max-height: 88vh;
-      display: flex; flex-direction: column; overflow: hidden;
-      box-shadow: 0 30px 80px rgba(0,0,0,.6);
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .modal-overlay.hidden { display: none; }
+    .modal-sheet {
+      background: var(--surface);
+      border-radius: 24px 24px 0 0;
+      border-top: 1px solid var(--border);
+      padding: 20px 20px calc(var(--safe-bottom) + 20px);
+      max-height: 85vh; overflow-y: auto;
+      animation: slideUp .25s ease;
     }
-    .modal-head {
-      padding: 16px 20px; border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; gap: 12px;
-    }
-    .modal-icon { font-size: 20px; }
-    .modal-head h2 { font-size: 15px; font-weight: 600; }
-    .modal-head p { font-size: 12px; color: var(--sub); margin-top: 2px; }
-    .modal-body { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
-    .modal-msg { background: var(--card); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.55; }
-    .modal-ss img { width: 100%; border-radius: 8px; object-fit: contain; max-height: 360px; display: block; }
-    .modal-foot { padding: 14px 20px; border-top: 1px solid var(--border); background: var(--card); }
-    .modal-foot label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 8px; font-weight: 500; }
-    .modal-row { display: flex; gap: 8px; }
+    @keyframes slideUp { from{transform:translateY(40px);opacity:0} to{transform:none;opacity:1} }
+    .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 18px; }
+    .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .modal-desc  { font-size: 13px; color: var(--sub); margin-bottom: 16px; line-height: 1.5; }
+    .modal-ss { border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
+    .modal-ss img { width: 100%; display: block; max-height: 260px; object-fit: contain; background: var(--bg); }
     .modal-input {
-      flex: 1; background: var(--bg); border: 1px solid var(--border);
-      border-radius: 9px; color: var(--text); font-size: 13px; padding: 10px 14px;
-      font-family: inherit; outline: none; transition: .2s;
+      width: 100%; background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 12px 16px; font-size: 15px;
+      color: var(--text); font-family: inherit; outline: none;
+      transition: border-color .2s; margin-bottom: 12px;
     }
     .modal-input:focus { border-color: var(--purple); }
     .modal-input::placeholder { color: var(--muted); }
-    .btn-send {
+    .modal-send {
+      width: 100%; height: 48px; border-radius: 14px;
       background: linear-gradient(135deg, var(--purple), #6d28d9);
-      color: #fff; border: none; border-radius: 9px; padding: 0 20px;
-      font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
-      transition: .18s;
+      border: none; color: #fff; font-size: 15px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: .2s;
     }
-    .btn-send:hover { filter: brightness(1.1); }
+    .modal-send:active { transform: scale(.97); }
+
+    /* Keyboard mode toast */
+    .kb-toast {
+      position: fixed; bottom: calc(var(--safe-bottom) + 100px);
+      left: 50%; transform: translateX(-50%);
+      background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3);
+      backdrop-filter: blur(8px);
+      border-radius: 99px; padding: 7px 18px;
+      font-size: 12px; color: var(--accent); font-weight: 500;
+      z-index: 50; display: none; animation: pop .2s;
+    }
+    .kb-toast.show { display: block; }
   </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
-<div class="topbar">
-  <div class="topbar-logo">🤖</div>
-  <span class="topbar-title">Index Agent</span>
-  <div class="topbar-right">
-    <span class="badge">Amazon Nova 2 Lite</span>
-    <div class="status-wrap">
-      <div class="dot" id="statusDot"></div>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo-mark">🤖</div>
+    <div class="topbar-info">
+      <div class="topbar-name">Index Agent</div>
+      <div class="topbar-sub">Amazon Nova 2 Lite</div>
+    </div>
+    <div class="status-pill">
+      <div class="status-dot" id="statusDot"></div>
       <span id="statusText">Idle</span>
     </div>
   </div>
+
+  <!-- TAB BAR -->
+  <div class="tabbar">
+    <div class="tab active" id="tabBrowser" onclick="switchTab('browser')">
+      <span class="tab-icon">🌐</span>
+      Browser
+    </div>
+    <div class="tab" id="tabActivity" onclick="switchTab('activity')">
+      <span class="tab-icon">📋</span>
+      Activity
+      <span class="tab-badge" id="activityBadge"></span>
+    </div>
+  </div>
+
+  <!-- CONTENT AREA -->
+  <div class="content">
+
+    <!-- BROWSER PANEL -->
+    <div class="panel active" id="panelBrowser">
+      <div class="browser-chrome">
+        <button class="nav-btn" onclick="sendNav('back')"    title="Back">‹</button>
+        <button class="nav-btn" onclick="sendNav('forward')" title="Forward">›</button>
+        <button class="nav-btn" onclick="sendNav('refresh')" title="Refresh">↻</button>
+        <div class="url-pill">
+          <span class="lock-icon" id="lockIcon">🔒</span>
+          <input id="urlInput" type="url" placeholder="about:blank" autocomplete="off" autocorrect="off" spellcheck="false"
+                 onkeydown="if(event.key==='Enter'){sendNav('goto',this.value.trim());this.blur()}" />
+        </div>
+        <span class="live-badge" id="liveBadge">● LIVE</span>
+      </div>
+      <div class="canvas-area" id="canvasArea"
+           ontouchstart="onTouch(event,'start')"
+           ontouchmove="onTouch(event,'move')"
+           ontouchend="onTouch(event,'end')"
+           onmousedown="onMouse(event,'down')"
+           onmouseup="onMouse(event,'up')"
+           onmousemove="onMouse(event,'move')"
+           onwheel="onWheel(event)">
+        <canvas id="liveCanvas"></canvas>
+        <div class="browser-idle" id="browserIdle">
+          <div class="browser-idle-icon">🌐</div>
+          <p>Live browser view appears here once the agent starts a task</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIVITY PANEL -->
+    <div class="panel" id="panelActivity">
+      <div class="feed-list" id="feedList">
+        <div class="empty-activity" id="emptyActivity">
+          <div class="empty-icon">💬</div>
+          <p>Start a task and the agent's activity will appear here</p>
+        </div>
+      </div>
+      <div class="result-card" id="resultCard">
+        <div class="result-label">✓ Completed</div>
+        <div class="result-text" id="resultText"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM INPUT -->
+  <div class="bottom-input">
+    <div class="quick-row" id="quickRow">
+      <button class="quick-chip" onclick="setP('Summarize Hacker News top 5 stories')">📰 Hacker News</button>
+      <button class="quick-chip" onclick="setP('Wikipedia featured article today')">📖 Wikipedia</button>
+      <button class="quick-chip" onclick="setP('GitHub trending repos today')">💻 GitHub</button>
+      <button class="quick-chip" onclick="setP('Search DuckDuckGo for AI news 2025')">🔍 AI News</button>
+    </div>
+    <div class="input-row">
+      <div class="input-wrap">
+        <textarea id="promptInput" rows="1"
+                  placeholder="Ask the agent to do something…"
+                  oninput="autoResize(this)"
+                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();runAgent()}"></textarea>
+      </div>
+      <button class="send-btn" id="runBtn" onclick="runAgent()">▶</button>
+    </div>
+    <div class="sub-actions">
+      <button class="sub-btn force" id="forceBtn" onclick="forceContinue()">⚡ Forçar</button>
+      <button class="sub-btn stop"  id="stopBtn"  onclick="stopAgent()" disabled>■ Stop</button>
+    </div>
+  </div>
+
 </div>
 
-<main>
-  <!-- BROWSER -->
-  <div class="browser-panel">
-    <div class="browser-bar">
-      <button class="nav-btn" id="btnBack"    onclick="sendNav('back')"    title="Back">&#8592;</button>
-      <button class="nav-btn" id="btnFwd"     onclick="sendNav('forward')" title="Forward">&#8594;</button>
-      <button class="nav-btn" id="btnRefresh" onclick="sendNav('refresh')" title="Refresh">&#8635;</button>
-      <div class="url-field">
-        <span class="lock ok" id="lockIcon">🔒</span>
-        <input id="urlInput" type="text" placeholder="about:blank" spellcheck="false"
-               onkeydown="if(event.key==='Enter'){sendNav('goto',this.value.trim())}" />
-      </div>
-      <div class="bar-right">
-        <span class="live-chip" id="liveChip">● LIVE</span>
-        <span class="step-chip" id="stepChip">Step 0</span>
-      </div>
+<!-- HUMAN MODAL (bottom sheet) -->
+<div class="modal-overlay hidden" id="humanModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🧑‍💻 The agent needs your help</div>
+    <div class="modal-desc" id="modalDesc">It ran into something it can't handle on its own.</div>
+    <div class="modal-ss" id="modalSS" style="display:none">
+      <img id="modalImg" src="" alt="" />
     </div>
-
-    <div class="canvas-shell" id="canvasShell"
-         onclick="focusCanvas()"
-         onmousedown="onMouse(event,'down')"
-         onmouseup="onMouse(event,'up')"
-         onmousemove="onMouse(event,'move')"
-         oncontextmenu="onMouse(event,'ctx');return false"
-         onwheel="onWheel(event)">
-      <canvas id="liveCanvas"></canvas>
-      <div class="idle-msg" id="idleMsg">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-        </svg>
-        <p>Live browser view appears here<br>once the agent starts</p>
-      </div>
-      <div class="kb-hint">⌨ Keyboard active — press Esc to exit</div>
-    </div>
-  </div>
-
-  <!-- RIGHT PANEL -->
-  <div class="right-panel">
-    <!-- Task input -->
-    <div class="task-box">
-      <div class="task-label">Task</div>
-      <div class="task-row">
-        <textarea id="promptInput" placeholder="Describe what the agent should do..."></textarea>
-        <div class="action-col">
-          <button class="btn btn-run"   id="runBtn"   onclick="runAgent()">▶ Run</button>
-          <button class="btn btn-force" id="forceBtn" onclick="forceContinue()">⚡ Forçar</button>
-          <button class="btn btn-stop"  id="stopBtn"  onclick="stopAgent()" disabled>■ Stop</button>
-        </div>
-      </div>
-      <div class="quick-tasks">
-        <div class="quick-label">Quick tasks</div>
-        <div class="quick-row">
-          <span class="quick-chip" onclick="setP(this)">Hacker News top 5</span>
-          <span class="quick-chip" onclick="setP(this)">Wikipedia featured today</span>
-          <span class="quick-chip" onclick="setP(this)">GitHub trending repos</span>
-          <span class="quick-chip" onclick="setP(this)">DuckDuckGo AI news 2025</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Activity feed -->
-    <div class="feed-wrap">
-      <div class="feed-header">
-        <span class="feed-title">Activity</span>
-        <button class="feed-clear" onclick="clearFeed()">Clear</button>
-      </div>
-      <div class="feed-scroll" id="feedScroll">
-        <div class="empty-feed" id="emptyFeed">
-          <p>The agent's actions will<br>appear here as it works</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="result-box" id="resultBox">
-      <div class="result-label">✓ Done</div>
-      <div class="result-text" id="resultText"></div>
-    </div>
-  </div>
-</main>
-
-<!-- HUMAN MODAL -->
-<div class="modal-bg hidden" id="humanModal">
-  <div class="modal">
-    <div class="modal-head">
-      <span class="modal-icon">🧑‍💻</span>
-      <div>
-        <h2>The agent needs your help</h2>
-        <p>It ran into something it can't handle on its own</p>
-      </div>
-    </div>
-    <div class="modal-body">
-      <div class="modal-msg" id="modalMsg"></div>
-      <div class="modal-ss" id="modalSS" style="display:none"><img id="modalImg" src="" alt="" /></div>
-    </div>
-    <div class="modal-foot">
-      <label>Type your response and press Enter</label>
-      <div class="modal-row">
-        <input class="modal-input" id="modalInput" type="text" placeholder="Your answer..." />
-        <button class="btn-send" onclick="submitHuman()">Send →</button>
-      </div>
-    </div>
+    <input class="modal-input" id="modalInput" type="text" placeholder="Type your answer…" />
+    <button class="modal-send" onclick="submitHuman()">Send →</button>
   </div>
 </div>
+
+<div class="kb-toast" id="kbToast">⌨ Keyboard active — tap elsewhere to exit</div>
 
 <script>
+/* ── Auto-resize textarea ── */
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+/* ── Tab switching ── */
+let _activeTab = 'browser';
+let _unreadActivity = 0;
+
+function switchTab(tab) {
+  _activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab' + cap(tab)).classList.add('active');
+  document.getElementById('panel' + cap(tab)).classList.add('active');
+  if (tab === 'activity') {
+    _unreadActivity = 0;
+    document.getElementById('activityBadge').classList.remove('show');
+    document.getElementById('activityBadge').textContent = '';
+  }
+}
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function bumpActivity() {
+  if (_activeTab !== 'activity') {
+    _unreadActivity++;
+    const b = document.getElementById('activityBadge');
+    b.textContent = _unreadActivity > 9 ? '9+' : _unreadActivity;
+    b.classList.add('show');
+  }
+}
+
 /* ── WebSocket ── */
 let ws = null;
 function connect() {
   const p = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(`${p}//${location.host}/ws`);
-  ws.onopen    = () => addEntry('info', 'Connected', 'Ready to run tasks');
-  ws.onmessage = (e) => handle(JSON.parse(e.data));
+  ws.onopen    = () => addCard('info', 'Connected', 'Ready to run tasks');
+  ws.onmessage = e => handle(JSON.parse(e.data));
   ws.onclose   = () => { setStatus('idle'); setTimeout(connect, 2000); };
   ws.onerror   = () => ws.close();
 }
 function tx(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
 
-/* ── Messages ── */
+/* ── Message handler ── */
+let _stepCard = null;
+
 function handle(m) {
   switch (m.type) {
-    case 'status':         setStatus(m.content); break;
-    case 'step_start':     onStepStart(m.step); break;
-    case 'live_frame':     renderJpeg(m.data); fpsUpdate(); if (m.url) setUrl(m.url); break;
-    case 'live_screenshot':if (m.screenshot) renderPng(m.screenshot); if (m.url) setUrl(m.url); break;
-    case 'step':           onStep(m); break;
-    case 'human_control':  onHuman(m); break;
-    case 'final':          onFinal(m); break;
-    case 'error':          addEntry('error', 'Something went wrong', m.content); break;
+    case 'status':          setStatus(m.content); break;
+    case 'step_start':      onStepStart(m.step); break;
+    case 'live_frame':      renderJpeg(m.data); if (m.url) setUrl(m.url); break;
+    case 'live_screenshot': if (m.screenshot) renderPng(m.screenshot); if (m.url) setUrl(m.url); break;
+    case 'step':            onStep(m); break;
+    case 'human_control':   onHuman(m); break;
+    case 'final':           onFinal(m); break;
+    case 'error':           addCard('error', 'Error', m.content); break;
   }
 }
 
@@ -486,9 +573,11 @@ function setStatus(s) {
   const run = document.getElementById('runBtn');
   const stp = document.getElementById('stopBtn');
   const inp = document.getElementById('promptInput');
-  dot.className = 'dot' + (s==='running'||s==='starting' ? ' on' : s==='error' ? ' err' : '');
+
+  dot.className = 'status-dot' + (s==='running'||s==='starting' ? ' on' : s==='error'||s==='paused' ? ' err' : '');
+
   if (s === 'paused') {
-    txt.textContent = 'Paused'; dot.className = 'dot err';
+    txt.textContent = 'Paused';
     run.disabled = true; stp.disabled = false; inp.disabled = true;
   } else if (s === 'running' || s === 'starting') {
     txt.textContent = s === 'starting' ? 'Starting…' : 'Running';
@@ -496,101 +585,81 @@ function setStatus(s) {
   } else {
     txt.textContent = 'Idle';
     run.disabled = false; stp.disabled = true; inp.disabled = false;
-    hideLive();
+    document.getElementById('liveBadge').style.display = 'none';
   }
 }
 
 /* ── Steps ── */
-let _stepEntry = null;
 function onStepStart(n) {
-  const sc = document.getElementById('stepChip');
-  sc.style.display = 'block'; sc.textContent = `Step ${n}`;
-  _stepEntry = addEntry('step', `Step ${n}`, '…', true);
+  _stepCard = addCard('step', `Step ${n}`, '…', true);
+  bumpActivity();
+  // switch to browser if not there
 }
 
 function onStep(m) {
   setUrl(m.url || '');
   if (m.screenshot) renderPng(m.screenshot);
+  const type = m.is_done ? 'done' : 'step';
   const text = m.summary || (m.is_done ? 'Task complete.' : 'Working…');
-  if (_stepEntry) finishEntry(_stepEntry, m.is_done ? 'done' : 'step', text);
-  else addEntry(m.is_done ? 'done' : 'step', `Step ${m.step}`, text);
-  _stepEntry = null;
-  if (m.error) addEntry('error', 'Notice', m.error);
+  if (_stepCard) finishCard(_stepCard, type, text);
+  else addCard(type, `Step ${m.step}`, text);
+  _stepCard = null;
+  if (m.error) addCard('error', 'Notice', m.error);
+  bumpActivity();
 }
 
 function onHuman(m) {
   if (m.screenshot) renderPng(m.screenshot);
   if (m.url) setUrl(m.url);
-  document.getElementById('modalMsg').textContent = m.message;
-  const ss = document.getElementById('modalSS'), mi = document.getElementById('modalImg');
-  if (m.screenshot) { mi.src = 'data:image/png;base64,'+m.screenshot; ss.style.display='block'; }
+  document.getElementById('modalDesc').textContent = m.message;
+  const ss = document.getElementById('modalSS');
+  const mi = document.getElementById('modalImg');
+  if (m.screenshot) { mi.src = 'data:image/png;base64,' + m.screenshot; ss.style.display = 'block'; }
   else ss.style.display = 'none';
   document.getElementById('modalInput').value = '';
   document.getElementById('humanModal').classList.remove('hidden');
-  setTimeout(() => document.getElementById('modalInput').focus(), 80);
-  addEntry('human', `Step ${m.step} — help needed`, m.message.slice(0,90));
+  setTimeout(() => document.getElementById('modalInput').focus(), 100);
+  addCard('human', `Step ${m.step} — help needed`, m.message.slice(0, 100));
+  bumpActivity();
 }
 
 function onFinal(m) {
   document.getElementById('resultText').textContent = m.content;
-  document.getElementById('resultBox').classList.add('show');
-  addEntry('done', `Completed in ${m.steps} step${m.steps===1?'':'s'}`, m.content.slice(0,120));
+  document.getElementById('resultCard').classList.add('show');
+  addCard('done', `Done in ${m.steps} step${m.steps===1?'':'s'}`, m.content.slice(0, 140));
+  bumpActivity();
 }
 
-/* ── Feed entries ── */
-function timeStr() {
-  return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-}
+/* ── Feed cards ── */
+const TAG_LABELS = { step:'In progress', done:'Done', error:'Error', human:'Help needed', info:'Info' };
 
-const TAGS = {
-  step:  'In progress',
-  done:  'Done',
-  error: 'Error',
-  human: 'Help needed',
-  info:  'Info',
-};
+function now() { return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
 
-function addEntry(type, label, text, typing = false) {
-  const feed = document.getElementById('feedScroll');
-  const empty = document.getElementById('emptyFeed');
+function addCard(type, label, text, typing=false) {
+  const list = document.getElementById('feedList');
+  const empty = document.getElementById('emptyActivity');
   if (empty) empty.remove();
 
-  const el = document.createElement('div');
-  el.className = 'entry';
-  const textClass = 'entry-text' + (typing ? ' typing' : '');
-  el.innerHTML = `
-    <div class="entry-dot-col">
-      <div class="entry-dot ${type}"></div>
-      <div class="entry-line"></div>
+  const card = document.createElement('div');
+  card.className = `feed-card ${type}`;
+  card.innerHTML = `
+    <div class="card-header">
+      <span class="card-tag">${TAG_LABELS[type]||type}</span>
+      <span class="card-time">${now()}</span>
     </div>
-    <div class="entry-body">
-      <div class="entry-meta">
-        <span class="entry-tag ${type}">${TAGS[type] || type}</span>
-        <span class="entry-time">${timeStr()}</span>
-      </div>
-      <div class="${textClass}">${esc(text)}</div>
-    </div>`;
-  feed.appendChild(el);
-  feed.scrollTop = feed.scrollHeight;
-  return el;
+    <div class="card-text${typing?' typing':''}">${esc(text)}</div>`;
+  list.appendChild(card);
+  list.scrollTop = list.scrollHeight;
+  return card;
 }
 
-function finishEntry(el, type, text) {
-  const dot  = el.querySelector('.entry-dot');
-  const tag  = el.querySelector('.entry-tag');
-  const txt  = el.querySelector('.entry-text');
-  dot.className = `entry-dot ${type}`;
-  tag.className = `entry-tag ${type}`;
-  tag.textContent = TAGS[type] || type;
-  txt.className = 'entry-text';
-  txt.textContent = text;
-  document.getElementById('feedScroll').scrollTop = 9999;
-}
-
-function clearFeed() {
-  const f = document.getElementById('feedScroll');
-  f.innerHTML = '<div class="empty-feed" id="emptyFeed"><p>The agent\'s actions will<br>appear here as it works</p></div>';
-  document.getElementById('resultBox').classList.remove('show');
+function finishCard(card, type, text) {
+  card.className = `feed-card ${type}`;
+  card.querySelector('.card-tag').textContent = TAG_LABELS[type]||type;
+  const ct = card.querySelector('.card-text');
+  ct.className = 'card-text';
+  ct.textContent = text;
+  document.getElementById('feedList').scrollTop = 9999;
 }
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -602,41 +671,49 @@ const ctx = canvas.getContext('2d');
 canvas.width = BW; canvas.height = BH;
 
 function renderJpeg(b64) {
-  hidePlaceholder();
+  showCanvas();
   const img = new Image();
   img.onload = () => ctx.drawImage(img, 0, 0, BW, BH);
   img.src = 'data:image/jpeg;base64,' + b64;
 }
 function renderPng(b64) {
-  hidePlaceholder();
+  showCanvas();
   const img = new Image();
   img.onload = () => ctx.drawImage(img, 0, 0, BW, BH);
   img.src = 'data:image/png;base64,' + b64;
 }
-function hidePlaceholder() {
-  document.getElementById('idleMsg').style.display = 'none';
-  document.getElementById('liveChip').style.display = 'block';
-}
-function hideLive() {
-  document.getElementById('liveChip').style.display = 'none';
-  document.getElementById('stepChip').style.display = 'none';
+function showCanvas() {
+  document.getElementById('browserIdle').style.display = 'none';
+  document.getElementById('liveBadge').style.display = 'block';
 }
 
-let _fps = 0, _fpsT = null;
-function fpsUpdate() {
-  _fps++;
-  if (!_fpsT) _fpsT = setInterval(() => { _fps = 0; }, 1000);
-}
-
+/* ── URL bar ── */
 function setUrl(url) {
   const inp = document.getElementById('urlInput');
   if (document.activeElement !== inp) inp.value = url;
-  const lk = document.getElementById('lockIcon');
-  lk.textContent = url.startsWith('https://') ? '🔒' : '🔓';
-  lk.className = 'lock ' + (url.startsWith('https://') ? 'ok' : 'no');
+  document.getElementById('lockIcon').textContent = url.startsWith('https://') ? '🔒' : '🔓';
 }
 
-/* ── Canvas interaction ── */
+/* ── Touch events (mobile) ── */
+function touchCoords(t) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: Math.round((t.clientX - r.left) * (BW / r.width)),
+    y: Math.round((t.clientY - r.top)  * (BH / r.height)),
+  };
+}
+function onTouch(e, type) {
+  if (document.getElementById('browserIdle').style.display === '') return;
+  e.preventDefault();
+  const t = e.touches[0] || e.changedTouches[0];
+  if (!t) return;
+  const {x,y} = touchCoords(t);
+  if (type === 'start') tx({type:'mousedown',x,y,button:0});
+  if (type === 'end')   { tx({type:'mouseup',x,y,button:0}); tx({type:'click',x,y,button:0}); }
+  if (type === 'move')  tx({type:'mousemove',x,y});
+}
+
+/* ── Mouse events (desktop) ── */
 function coords(e) {
   const r = canvas.getBoundingClientRect();
   return {
@@ -644,46 +721,40 @@ function coords(e) {
     y: Math.round((e.clientY - r.top)  * (BH / r.height)),
   };
 }
-
-let _lastMv = 0;
+let _lmv = 0;
 function onMouse(e, type) {
-  if (!document.getElementById('idleMsg').style.display) return;
+  if (document.getElementById('browserIdle').style.display === '') return;
   const {x,y} = coords(e);
-  if (x < 0 || y < 0 || x > BW || y > BH) return;
-  if (type === 'move') {
-    if (Date.now() - _lastMv < 50) return;
-    _lastMv = Date.now();
-    tx({type:'mousemove',x,y});
-    return;
-  }
-  if (type === 'down') tx({type:'mousedown',x,y,button:e.button});
-  if (type === 'up')   tx({type:'mouseup',x,y,button:e.button});
-  if (type === 'ctx')  tx({type:'click',x,y,button:2});
+  if (x<0||y<0||x>BW||y>BH) return;
+  if (type==='move') { if(Date.now()-_lmv<50) return; _lmv=Date.now(); tx({type:'mousemove',x,y}); return; }
+  if (type==='down') tx({type:'mousedown',x,y,button:e.button});
+  if (type==='up')   tx({type:'mouseup',x,y,button:e.button});
 }
 function onWheel(e) {
   e.preventDefault();
-  if (!document.getElementById('idleMsg').style.display) return;
+  if (document.getElementById('browserIdle').style.display === '') return;
   const {x,y} = coords(e);
   tx({type:'wheel',x,y,deltaX:e.deltaX,deltaY:e.deltaY});
 }
 
 /* ── Keyboard ── */
 let _kb = false;
-function focusCanvas() {
+document.getElementById('canvasArea').addEventListener('click', () => {
+  if (document.getElementById('browserIdle').style.display !== 'none') return;
   _kb = true;
-  document.getElementById('canvasShell').classList.add('kb-on');
-}
+  document.getElementById('kbToast').classList.add('show');
+});
 document.addEventListener('click', e => {
-  if (!e.target.closest('#canvasShell')) {
+  if (!e.target.closest('#canvasArea') && _kb) {
     _kb = false;
-    document.getElementById('canvasShell').classList.remove('kb-on');
+    document.getElementById('kbToast').classList.remove('show');
   }
 });
 document.addEventListener('keydown', e => {
   if (!_kb) return;
-  if (e.key === 'Escape') { _kb = false; document.getElementById('canvasShell').classList.remove('kb-on'); return; }
+  if (e.key === 'Escape') { _kb = false; document.getElementById('kbToast').classList.remove('show'); return; }
   e.preventDefault();
-  tx({type:'keydown', key:e.key, code:e.code, modifiers:{shift:e.shiftKey,ctrl:e.ctrlKey,alt:e.altKey,meta:e.metaKey}});
+  tx({type:'keydown',key:e.key,code:e.code,modifiers:{shift:e.shiftKey,ctrl:e.ctrlKey,alt:e.altKey,meta:e.metaKey}});
 });
 
 /* ── Navigation ── */
@@ -694,31 +765,35 @@ function runAgent() {
   const prompt = document.getElementById('promptInput').value.trim();
   if (!prompt) return;
   if (!ws || ws.readyState !== 1) return;
-  document.getElementById('resultBox').classList.remove('show');
+
+  document.getElementById('resultCard').classList.remove('show');
   document.getElementById('urlInput').value = '';
-  document.getElementById('stepChip').style.display = 'none';
   ctx.clearRect(0,0,BW,BH);
-  document.getElementById('idleMsg').style.display = '';
-  document.getElementById('liveChip').style.display = 'none';
-  clearFeed();
-  addEntry('info', 'Task started', prompt);
+  document.getElementById('browserIdle').style.display = '';
+  document.getElementById('liveBadge').style.display = 'none';
+
+  // Clear feed
+  const fl = document.getElementById('feedList');
+  fl.innerHTML = '<div class="empty-activity" id="emptyActivity"><div class="empty-icon">💬</div><p>Start a task and the agent\'s activity will appear here</p></div>';
+
+  document.getElementById('promptInput').value = '';
+  document.getElementById('promptInput').style.height = 'auto';
+
+  addCard('info', 'Task started', prompt);
   tx({type:'run', prompt});
+  switchTab('browser');
 }
 
 function stopAgent()     { tx({type:'stop'}); }
-function forceContinue() { tx({type:'force_continue'}); addEntry('info','Force continue','Resuming from where it stopped…'); }
-function setP(el)        { document.getElementById('promptInput').value = el.textContent.trim(); }
-
-document.getElementById('promptInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runAgent();
-});
+function forceContinue() { tx({type:'force_continue'}); addCard('info','Force continue','Resuming…'); }
+function setP(text)      { const ta = document.getElementById('promptInput'); ta.value = text; autoResize(ta); ta.focus(); }
 
 /* ── Human modal ── */
 function submitHuman() {
   const text = document.getElementById('modalInput').value.trim();
   if (!text) return;
   tx({type:'human_input', text});
-  addEntry('human', 'You replied', text);
+  addCard('human', 'You replied', text);
   document.getElementById('humanModal').classList.add('hidden');
 }
 document.getElementById('modalInput').addEventListener('keydown', e => {

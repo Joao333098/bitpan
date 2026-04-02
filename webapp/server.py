@@ -88,8 +88,23 @@ async def websocket_endpoint(websocket: WebSocket):
                 pass
         return ""
 
+    async def stream_screenshots():
+        """Background task: send live screenshots every 500ms while agent is running"""
+        while True:
+            await asyncio.sleep(0.5)
+            sess = active_sessions.get(session_id, {})
+            if not sess.get("running"):
+                break
+            ss = get_screenshot()
+            if ss:
+                try:
+                    await websocket.send_text(json.dumps({"type": "live_screenshot", "screenshot": ss, "url": get_url()}))
+                except Exception:
+                    break
+
     async def run_agent(prompt: str):
         agent = None
+        stream_task = None
         try:
             llm = make_nova_provider()
             browser_config = BrowserConfig(viewport_size={"width": 1280, "height": 800})
@@ -99,6 +114,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 active_sessions[session_id]["agent"] = agent
 
             await send({"type": "status", "content": "running"})
+
+            stream_task = asyncio.create_task(stream_screenshots())
 
             step = 0
             result = None
@@ -110,7 +127,22 @@ async def websocket_endpoint(websocket: WebSocket):
             while not is_done and step < max_steps:
                 await send({"type": "step_start", "step": step + 1})
 
-                result, summary = await agent.step(step, result)
+                # Retry failed steps up to 3 times
+                step_error = None
+                for attempt in range(3):
+                    try:
+                        result, summary = await agent.step(step, result)
+                        step_error = None
+                        break
+                    except Exception as e:
+                        step_error = e
+                        logger.warning(f"Step {step+1} attempt {attempt+1} failed: {e}")
+                        await asyncio.sleep(1)
+
+                if step_error:
+                    await send({"type": "error", "content": f"Step {step+1} failed after 3 attempts: {step_error}"})
+                    break
+
                 step += 1
 
                 screenshot_b64 = get_screenshot()
@@ -223,6 +255,8 @@ async def websocket_endpoint(websocket: WebSocket):
             logger.exception("Agent error")
             await send({"type": "error", "content": str(e)})
         finally:
+            if stream_task and not stream_task.done():
+                stream_task.cancel()
             if agent:
                 try:
                     await agent.browser.close()

@@ -57,10 +57,13 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     session_id = id(websocket)
     human_input_queue: asyncio.Queue = asyncio.Queue()
+    continue_event: asyncio.Event = asyncio.Event()
     active_sessions[session_id] = {
         "agent": None,
         "running": False,
+        "paused": False,
         "human_input_queue": human_input_queue,
+        "continue_event": continue_event,
     }
 
     async def send(msg: dict):
@@ -140,8 +143,25 @@ async def websocket_endpoint(websocket: WebSocket):
                         await asyncio.sleep(1)
 
                 if step_error:
-                    await send({"type": "error", "content": f"Step {step+1} failed after 3 attempts: {step_error}"})
-                    break
+                    await send({"type": "error", "content": f"Step {step+1} falhou: {step_error}"})
+                    await send({"type": "status", "content": "paused"})
+                    if session_id in active_sessions:
+                        active_sessions[session_id]["paused"] = True
+                        active_sessions[session_id]["running"] = False
+                    # Wait for user to click "Force Continue" or "Stop"
+                    ce = active_sessions.get(session_id, {}).get("continue_event")
+                    if ce:
+                        ce.clear()
+                        try:
+                            await asyncio.wait_for(ce.wait(), timeout=300)
+                        except asyncio.TimeoutError:
+                            break
+                    if session_id in active_sessions:
+                        active_sessions[session_id]["paused"] = False
+                        active_sessions[session_id]["running"] = True
+                    # Skip the failed step result and retry with clean state
+                    result = None
+                    await send({"type": "status", "content": "running"})
 
                 step += 1
 
@@ -290,7 +310,17 @@ async def websocket_endpoint(websocket: WebSocket):
             elif msg.get("type") == "human_input":
                 human_input_queue.put_nowait(msg.get("text", ""))
 
+            elif msg.get("type") == "force_continue":
+                sess = active_sessions.get(session_id, {})
+                ce = sess.get("continue_event")
+                if ce and sess.get("paused"):
+                    ce.set()
+
             elif msg.get("type") == "stop":
+                # If paused, unblock the wait so run_agent can clean up
+                ce = active_sessions.get(session_id, {}).get("continue_event")
+                if ce:
+                    ce.set()
                 agent = active_sessions.get(session_id, {}).get("agent")
                 if agent:
                     try:
@@ -299,6 +329,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         pass
                 if session_id in active_sessions:
                     active_sessions[session_id]["running"] = False
+                    active_sessions[session_id]["paused"] = False
                     active_sessions[session_id]["agent"] = None
                 await send({"type": "status", "content": "idle"})
                 await send({"type": "error", "content": "Stopped by user."})

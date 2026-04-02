@@ -143,6 +143,7 @@
       max-width: 100%; max-height: 100%;
       object-fit: contain; display: block;
       image-rendering: -webkit-optimize-contrast;
+      cursor: crosshair;
     }
 
     .screenshot-placeholder {
@@ -402,7 +403,7 @@
         <textarea id="promptInput" placeholder="e.g. Go to news.ycombinator.com and summarize the top 3 stories"></textarea>
         <div class="btn-group">
           <button class="btn btn-primary" id="runBtn" onclick="runAgent()">▶ Run</button>
-          <button class="btn btn-force"   id="forceBtn" onclick="forceContinue()" disabled>⚡ Forçar</button>
+          <button class="btn btn-force"   id="forceBtn" onclick="forceContinue()">⚡ Forçar</button>
           <button class="btn btn-danger"  id="stopBtn" onclick="stopAgent()" disabled>■ Stop</button>
         </div>
       </div>
@@ -539,6 +540,8 @@
 
     dot.className = 'status-dot ' + (s === 'running' || s === 'starting' ? 'running' : s === 'error' ? 'error' : '');
 
+    forceBtn.disabled = false;
+
     if (s === 'paused') {
       txt.textContent = 'Pausado ⚡';
       dot.className = 'status-dot error';
@@ -559,6 +562,8 @@
     addLog('info', 'Forçando continuação', 'Retomando do ponto onde parou…', '⚡');
   }
 
+  const BROWSER_W = 1280, BROWSER_H = 800;
+
   function showScreenshot(b64) {
     const wrap  = document.getElementById('screenshotWrap');
     const ph    = document.getElementById('screenshotPlaceholder');
@@ -567,9 +572,30 @@
     if (!img) {
       img = document.createElement('img');
       img.className = 'main-ss';
+      img.addEventListener('click', onScreenshotClick);
       wrap.appendChild(img);
     }
     img.src = 'data:image/png;base64,' + b64;
+  }
+
+  function onScreenshotClick(e) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    const img  = e.currentTarget;
+    const rect = img.getBoundingClientRect();
+    const natW = img.naturalWidth  || BROWSER_W;
+    const natH = img.naturalHeight || BROWSER_H;
+    const scale = Math.min(rect.width / natW, rect.height / natH);
+    const rendW = natW * scale;
+    const rendH = natH * scale;
+    const offX  = (rect.width  - rendW) / 2;
+    const offY  = (rect.height - rendH) / 2;
+    const relX  = e.clientX - rect.left - offX;
+    const relY  = e.clientY - rect.top  - offY;
+    const bx = Math.round((relX / rendW) * BROWSER_W);
+    const by = Math.round((relY / rendH) * BROWSER_H);
+    if (bx < 0 || by < 0 || bx > BROWSER_W || by > BROWSER_H) return;
+    ws.send(JSON.stringify({ type: 'click', x: bx, y: by }));
+    addLog('info', 'Click enviado', `x=${bx}, y=${by}`, '🖱️');
   }
 
   function showSpinner() {}

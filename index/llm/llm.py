@@ -66,22 +66,27 @@ class Message:
             
         elif isinstance(self.content, list):
 
+            if self.role == "system":
+                text_parts = [c.text for c in self.content if isinstance(c, TextContent)]
+                message["content"] = "\n".join(text_parts)
+                return message
+
             content_blocks = []
 
             for content_block in self.content:
 
-                block = {}
-                
                 if isinstance(content_block, TextContent):
-                    block["type"] = "text"
-                    block["text"] = content_block.text
-                elif isinstance(content_block, ImageContent):
-                    block["type"] = "image_url"
-                    block["image_url"] = {
-                        "url": "data:image/png;base64," + content_block.image_b64
-                    }
-
-                content_blocks.append(block)
+                    content_blocks.append({
+                        "type": "text",
+                        "text": content_block.text,
+                    })
+                elif isinstance(content_block, ImageContent) and content_block.image_b64:
+                    content_blocks.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": "data:image/png;base64," + content_block.image_b64
+                        },
+                    })
 
             message["content"] = content_blocks
 

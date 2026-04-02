@@ -543,15 +543,12 @@
       txt.textContent = 'Pausado ⚡';
       dot.className = 'status-dot error';
       run.disabled = true; stop.disabled = false; inp.disabled = true;
-      forceBtn.disabled = false;
     } else if (s === 'running' || s === 'starting') {
       txt.textContent = s === 'starting' ? 'Starting…' : 'Running';
       run.disabled = true; stop.disabled = false; inp.disabled = true;
-      forceBtn.disabled = true;
     } else {
       txt.textContent = 'Idle';
       run.disabled = false; stop.disabled = true; inp.disabled = false;
-      forceBtn.disabled = true;
       showSpinner(false);
     }
   }
@@ -560,7 +557,6 @@
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({ type: 'force_continue' }));
     addLog('info', 'Forçando continuação', 'Retomando do ponto onde parou…', '⚡');
-    document.getElementById('forceBtn').disabled = true;
   }
 
   function showScreenshot(b64) {

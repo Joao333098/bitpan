@@ -3,578 +3,533 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Index Agent</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 
-    :root {
-      --bg:      #0c0e14;
-      --surface: #13161f;
-      --card:    #1a1e2e;
-      --border:  #252b3d;
-      --accent:  #6366f1;
-      --accent2: #8b5cf6;
-      --blue:    #3b82f6;
-      --green:   #10b981;
-      --red:     #ef4444;
-      --amber:   #f59e0b;
-      --purple:  #a78bfa;
-      --text:    #f1f5f9;
-      --sub:     #94a3b8;
-      --muted:   #475569;
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --safe-top:    env(safe-area-inset-top, 0px);
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0; padding: 0;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --st: env(safe-area-inset-top, 0px);
+      --sb: env(safe-area-inset-bottom, 0px);
+    }
 
     html, body {
       height: 100%; height: 100dvh;
       font-family: 'Inter', -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      background: #000;
+      color: #fff;
       overflow: hidden;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── APP SHELL ── */
+    /* ── BACKGROUND ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 10%, rgba(255,255,255,.04) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(255,255,255,.03) 0%, transparent 50%);
+      pointer-events: none; z-index: 0;
+    }
+
     .app {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      height: 100dvh;
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column;
+      height: 100%; height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ── GLASS MIXIN helpers ── */
+    .glass {
+      background: rgba(255,255,255,.06);
+      backdrop-filter: blur(28px) saturate(160%);
+      -webkit-backdrop-filter: blur(28px) saturate(160%);
+      border: 1px solid rgba(255,255,255,.1);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.12),
+        0 8px 32px rgba(0,0,0,.4);
     }
 
     /* ── TOPBAR ── */
     .topbar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: calc(var(--safe-top) + 12px) 16px 12px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+      padding: calc(var(--st) + 14px) 18px 14px;
       flex-shrink: 0;
-      position: relative;
-      z-index: 10;
+      background: rgba(255,255,255,.05);
+      backdrop-filter: blur(28px) saturate(160%);
+      -webkit-backdrop-filter: blur(28px) saturate(160%);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.1);
     }
-    .logo-mark {
-      width: 34px; height: 34px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 10px;
+    .logo {
+      width: 36px; height: 36px; flex-shrink: 0;
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 11px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px; flex-shrink: 0;
+      font-size: 18px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.2);
     }
-    .topbar-info { flex: 1; min-width: 0; }
-    .topbar-name { font-size: 15px; font-weight: 600; letter-spacing: -.3px; }
-    .topbar-sub  { font-size: 11px; color: var(--sub); margin-top: 1px; }
-    .status-pill {
-      display: flex; align-items: center; gap: 5px;
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 99px; padding: 4px 11px;
-      font-size: 11px; font-weight: 500; color: var(--sub);
-      flex-shrink: 0;
+    .topbar-text { flex: 1; }
+    .topbar-name { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: -.3px; }
+    .topbar-sub  { font-size: 11px; color: rgba(255,255,255,.4); margin-top: 1px; }
+
+    .status-glass {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 99px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+      font-size: 11px; font-weight: 500; color: rgba(255,255,255,.6);
     }
-    .status-dot {
+    .sdot {
       width: 6px; height: 6px; border-radius: 50%;
-      background: var(--muted); transition: .3s;
+      background: rgba(255,255,255,.3); transition: .3s;
     }
-    .status-dot.on  { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 1.5s infinite; }
-    .status-dot.err { background: var(--red); }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+    .sdot.on  { background: #fff; box-shadow: 0 0 8px rgba(255,255,255,.8); animation: glow 1.5s infinite; }
+    .sdot.err { background: rgba(255,255,255,.5); }
+    @keyframes glow { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-    /* ── TAB BAR ── */
-    .tabbar {
-      display: flex;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
+    /* ── BROWSER CHROME ── */
+    .browser-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px;
       flex-shrink: 0;
-    }
-    .tab {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 3px; padding: 10px 8px;
-      font-size: 10px; font-weight: 600; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .5px;
-      cursor: pointer; transition: .2s;
-      border-bottom: 2px solid transparent;
-      position: relative;
-    }
-    .tab .tab-icon { font-size: 18px; }
-    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-    .tab-badge {
-      position: absolute; top: 6px; right: calc(50% - 20px);
-      background: var(--red); color: #fff;
-      font-size: 9px; font-weight: 700;
-      width: 16px; height: 16px; border-radius: 50%;
-      display: none; align-items: center; justify-content: center;
-    }
-    .tab-badge.show { display: flex; }
-
-    /* ── CONTENT ── */
-    .content {
-      flex: 1;
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* Panel */
-    .panel {
-      position: absolute; inset: 0;
-      display: none; flex-direction: column;
-      overflow: hidden;
-    }
-    .panel.active { display: flex; }
-
-    /* ── BROWSER PANEL ── */
-    /* Mini browser chrome */
-    .browser-chrome {
-      display: flex; align-items: center; gap: 7px;
-      padding: 8px 12px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
+      background: rgba(255,255,255,.04);
+      border-bottom: 1px solid rgba(255,255,255,.07);
     }
     .nav-btn {
-      width: 32px; height: 32px;
-      border: none; border-radius: 8px;
-      background: transparent; color: var(--muted);
-      font-size: 15px; cursor: pointer;
+      width: 32px; height: 32px; flex-shrink: 0;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 9px; color: rgba(255,255,255,.5);
+      font-size: 16px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: .15s; flex-shrink: 0;
+      transition: .15s; font-family: inherit;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
-    .nav-btn:active { background: var(--border); }
+    .nav-btn:active { background: rgba(255,255,255,.14); color: #fff; }
     .nav-btn:disabled { opacity: .2; }
-    .url-pill {
-      flex: 1; display: flex; align-items: center; gap: 6px;
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 99px; padding: 6px 14px;
-      font-size: 12px; color: var(--sub); overflow: hidden;
-      min-width: 0;
+
+    .url-bar {
+      flex: 1; display: flex; align-items: center; gap: 7px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 99px; padding: 7px 14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.1);
     }
-    .url-pill input {
+    .url-lock { font-size: 10px; color: rgba(255,255,255,.4); flex-shrink: 0; }
+    #urlInput {
       flex: 1; background: none; border: none; outline: none;
-      font-size: 12px; color: var(--text); font-family: inherit;
-      min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-size: 12px; color: rgba(255,255,255,.8); font-family: inherit;
+      min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .url-pill input::placeholder { color: var(--muted); }
-    .lock-icon { font-size: 11px; flex-shrink: 0; }
-    .live-badge {
-      background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.25);
-      color: var(--green); font-size: 9px; font-weight: 700;
-      padding: 2px 7px; border-radius: 99px; white-space: nowrap;
-      display: none; animation: pulse 1.5s infinite;
+    #urlInput::placeholder { color: rgba(255,255,255,.25); }
+
+    .live-chip {
+      font-size: 9px; font-weight: 700; letter-spacing: .5px;
+      padding: 2px 8px; border-radius: 99px;
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.2);
+      color: rgba(255,255,255,.7);
+      display: none; animation: glow 1.5s infinite; flex-shrink: 0;
     }
 
-    /* Canvas area */
-    .canvas-area {
-      flex: 1; position: relative;
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden; background: #080b12;
+    /* ── CANVAS ── */
+    .canvas-wrap {
+      flex: 0 0 auto;
+      height: 42vh;
+      position: relative; overflow: hidden; background: #050505;
       touch-action: none;
+      border-bottom: 1px solid rgba(255,255,255,.06);
     }
     #liveCanvas {
-      max-width: 100%; max-height: 100%;
-      display: block; touch-action: none;
+      width: 100%; height: 100%;
+      object-fit: contain; display: block;
+      touch-action: none;
     }
-    .browser-idle {
+    .canvas-idle {
       position: absolute; inset: 0;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      gap: 14px; color: var(--muted);
-      pointer-events: none; text-align: center; padding: 30px;
+      gap: 10px; pointer-events: none;
     }
-    .browser-idle-icon {
-      width: 72px; height: 72px;
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 20px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 32px; opacity: .4;
+    .canvas-idle-icon {
+      font-size: 40px; opacity: .15;
     }
-    .browser-idle p { font-size: 13px; color: var(--muted); line-height: 1.6; max-width: 240px; }
+    .canvas-idle p {
+      font-size: 12px; color: rgba(255,255,255,.2);
+      text-align: center; line-height: 1.6;
+    }
 
-    /* ── ACTIVITY PANEL ── */
-    .activity-panel { background: var(--bg); }
-
-    .feed-list {
-      flex: 1; overflow-y: auto; padding: 16px;
-      display: flex; flex-direction: column; gap: 8px;
+    /* ── ACTIVITY FEED — always visible ── */
+    .feed-section {
+      flex: 1; overflow: hidden;
+      display: flex; flex-direction: column;
+      min-height: 0;
+    }
+    .feed-inner {
+      flex: 1; overflow-y: auto;
+      padding: 14px 18px 10px;
       -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
     }
-    .feed-list::-webkit-scrollbar { display: none; }
+    .feed-inner::-webkit-scrollbar { display: none; }
 
-    /* Conversational feed card */
-    .feed-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 16px; padding: 14px 16px;
-      animation: pop .2s ease both;
-      position: relative; overflow: hidden;
-    }
-    @keyframes pop { from{opacity:0;transform:translateY(8px) scale(.98)} to{opacity:1;transform:none} }
-
-    .feed-card::before {
-      content: '';
-      position: absolute; left: 0; top: 0; bottom: 0;
-      width: 3px; border-radius: 3px 0 0 3px;
-    }
-    .feed-card.step::before   { background: var(--accent); }
-    .feed-card.done::before   { background: var(--green); }
-    .feed-card.error::before  { background: var(--red); }
-    .feed-card.human::before  { background: var(--purple); }
-    .feed-card.info::before   { background: var(--amber); }
-
-    .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-    .card-tag {
-      font-size: 9px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .6px; padding: 2px 7px; border-radius: 5px;
-    }
-    .feed-card.step  .card-tag { background: rgba(99,102,241,.15); color: var(--accent); }
-    .feed-card.done  .card-tag { background: rgba(16,185,129,.12); color: var(--green); }
-    .feed-card.error .card-tag { background: rgba(239,68,68,.12);  color: var(--red); }
-    .feed-card.human .card-tag { background: rgba(167,139,250,.12);color: var(--purple); }
-    .feed-card.info  .card-tag { background: rgba(245,158,11,.1);  color: var(--amber); }
-    .card-time { font-size: 10px; color: var(--muted); margin-left: auto; }
-    .card-text {
-      font-size: 14px; color: var(--text); line-height: 1.55; font-weight: 400;
-    }
-    .card-text.typing::after {
-      content: '▋';
-      animation: blink-cur .7s step-end infinite;
-      color: var(--accent); margin-left: 2px; font-size: 12px;
-    }
-    @keyframes blink-cur { 0%,100%{opacity:1} 50%{opacity:0} }
-
-    .empty-activity {
-      flex: 1; display: flex; flex-direction: column;
+    /* Empty */
+    .feed-empty {
+      height: 100%; display: flex;
       align-items: center; justify-content: center;
-      gap: 12px; text-align: center; padding: 30px;
+      font-size: 12px; color: rgba(255,255,255,.15);
+      text-align: center; line-height: 1.7;
     }
-    .empty-icon { font-size: 40px; opacity: .2; }
-    .empty-activity p { font-size: 13px; color: var(--muted); line-height: 1.6; max-width: 220px; }
 
-    /* Result */
-    .result-card {
-      margin: 0 16px 16px;
-      background: rgba(16,185,129,.06); border: 1px solid rgba(16,185,129,.2);
-      border-radius: 16px; padding: 14px 16px; display: none;
+    /* Log entries — human-style, no containers */
+    .log-entry {
+      display: flex; gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+      animation: appear .2s ease;
     }
-    .result-card.show { display: block; }
-    .result-label { font-size: 11px; font-weight: 700; color: var(--green); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
-    .result-text { font-size: 13px; color: var(--text); line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+    .log-entry:last-child { border-bottom: none; }
+    @keyframes appear { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:none} }
+
+    .log-time {
+      font-size: 10px; color: rgba(255,255,255,.2);
+      flex-shrink: 0; padding-top: 2px; font-variant-numeric: tabular-nums;
+      min-width: 38px;
+    }
+    .log-content { flex: 1; min-width: 0; }
+    .log-label {
+      font-size: 9px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .6px; color: rgba(255,255,255,.25);
+      margin-bottom: 2px;
+    }
+    .log-label.active { color: rgba(255,255,255,.5); }
+    .log-label.done   { color: rgba(255,255,255,.45); }
+    .log-label.err    { color: rgba(255,255,255,.35); }
+    .log-text {
+      font-size: 13px; font-weight: 400;
+      color: rgba(255,255,255,.75);
+      line-height: 1.5;
+    }
+    .log-text.typing::after {
+      content: '|';
+      animation: blink .7s step-end infinite;
+      margin-left: 1px; color: rgba(255,255,255,.4);
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .log-entry.done .log-text { color: rgba(255,255,255,.6); }
+    .log-entry.err  .log-text { color: rgba(255,255,255,.4); text-decoration: line-through; text-decoration-color: rgba(255,255,255,.2); }
 
     /* ── BOTTOM INPUT ── */
-    .bottom-input {
+    .bottom {
       flex-shrink: 0;
-      padding: 12px 16px calc(var(--safe-bottom) + 12px);
-      background: var(--surface);
-      border-top: 1px solid var(--border);
+      padding: 10px 14px calc(var(--sb) + 10px);
+      background: rgba(255,255,255,.04);
+      backdrop-filter: blur(28px) saturate(160%);
+      -webkit-backdrop-filter: blur(28px) saturate(160%);
+      border-top: 1px solid rgba(255,255,255,.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
     }
 
-    /* Quick task chips */
-    .quick-row {
-      display: flex; gap: 7px; overflow-x: auto; padding-bottom: 10px;
-      -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    /* Chips */
+    .chips {
+      display: flex; gap: 7px; overflow-x: auto;
+      padding-bottom: 10px; scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
     }
-    .quick-row::-webkit-scrollbar { display: none; }
-    .quick-chip {
-      white-space: nowrap; font-size: 12px; padding: 6px 14px;
-      border-radius: 99px; background: var(--card); border: 1px solid var(--border);
-      color: var(--sub); cursor: pointer; transition: .15s; flex-shrink: 0;
-      font-family: inherit;
+    .chips::-webkit-scrollbar { display: none; }
+    .chip {
+      white-space: nowrap; font-size: 12px; font-weight: 400;
+      padding: 6px 14px; border-radius: 99px; flex-shrink: 0;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.1);
+      color: rgba(255,255,255,.55);
+      cursor: pointer; transition: .15s; font-family: inherit;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.1);
     }
-    .quick-chip:active { background: var(--border); color: var(--text); }
+    .chip:active { background: rgba(255,255,255,.14); color: rgba(255,255,255,.9); }
 
-    /* Input row */
-    .input-row {
-      display: flex; align-items: flex-end; gap: 8px;
+    /* Input glass pill */
+    .input-glass {
+      display: flex; align-items: flex-end; gap: 10px;
     }
-    .input-wrap {
-      flex: 1;
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 18px; padding: 10px 16px;
-      transition: border-color .2s; display: flex; align-items: flex-end; gap: 8px;
+    .input-pill {
+      flex: 1; display: flex; align-items: flex-end; gap: 8px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 22px; padding: 11px 16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12),
+                  0 4px 20px rgba(0,0,0,.3);
+      transition: border-color .2s;
     }
-    .input-wrap:focus-within { border-color: var(--accent); }
+    .input-pill:focus-within {
+      border-color: rgba(255,255,255,.25);
+      background: rgba(255,255,255,.09);
+    }
     #promptInput {
       flex: 1; background: none; border: none; outline: none;
-      font-size: 15px; color: var(--text); font-family: inherit;
-      resize: none; max-height: 120px; min-height: 22px;
-      line-height: 1.4; overflow-y: auto;
+      font-size: 15px; color: #fff; font-family: inherit;
+      resize: none; max-height: 110px; min-height: 22px;
+      line-height: 1.45; overflow-y: auto; scrollbar-width: none;
     }
-    #promptInput::placeholder { color: var(--muted); }
-    #promptInput:disabled { opacity: .4; }
+    #promptInput::-webkit-scrollbar { display: none; }
+    #promptInput::placeholder { color: rgba(255,255,255,.25); }
+    #promptInput:disabled { opacity: .35; }
 
-    /* Action buttons in input row */
     .send-btn {
-      width: 44px; height: 44px; flex-shrink: 0;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border: none; border-radius: 14px;
-      color: #fff; font-size: 18px; cursor: pointer;
+      width: 42px; height: 42px; flex-shrink: 0;
+      background: #fff;
+      border: none; border-radius: 13px;
+      color: #000; font-size: 17px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: .2s; font-family: inherit;
+      transition: .18s; font-family: inherit;
+      box-shadow: 0 2px 12px rgba(255,255,255,.2);
     }
-    .send-btn:active { transform: scale(.93); }
-    .send-btn:disabled { opacity: .35; }
+    .send-btn:active { transform: scale(.91); }
+    .send-btn:disabled { opacity: .2; }
 
-    /* Sub-actions row */
-    .sub-actions { display: flex; gap: 8px; margin-top: 8px; }
+    /* Sub buttons */
+    .sub-row { display: flex; gap: 8px; margin-top: 8px; }
     .sub-btn {
-      flex: 1; height: 38px; border-radius: 12px;
-      border: 1px solid var(--border); background: var(--card);
-      color: var(--sub); font-size: 12px; font-weight: 600;
-      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;
-      transition: .15s; font-family: inherit;
+      flex: 1; height: 36px; border-radius: 12px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      color: rgba(255,255,255,.45); font-size: 12px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      transition: .15s;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
     }
-    .sub-btn.force { border-color: rgba(245,158,11,.3); color: var(--amber); }
-    .sub-btn.stop  { border-color: rgba(239,68,68,.3); color: var(--red); }
-    .sub-btn:active { transform: scale(.96); }
-    .sub-btn:disabled { opacity: .3; }
+    .sub-btn:active { background: rgba(255,255,255,.12); color: rgba(255,255,255,.8); }
+    .sub-btn:disabled { opacity: .2; }
 
     /* ── HUMAN MODAL ── */
-    .modal-overlay {
+    .overlay {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,.75); backdrop-filter: blur(10px);
-      z-index: 200; display: flex; flex-direction: column;
-      justify-content: flex-end; animation: fadeIn .2s;
+      background: rgba(0,0,0,.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 200;
+      display: flex; flex-direction: column;
+      justify-content: flex-end;
+      animation: fadeIn .2s;
     }
     @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-    .modal-overlay.hidden { display: none; }
-    .modal-sheet {
-      background: var(--surface);
-      border-radius: 24px 24px 0 0;
-      border-top: 1px solid var(--border);
-      padding: 20px 20px calc(var(--safe-bottom) + 20px);
-      max-height: 85vh; overflow-y: auto;
+    .overlay.hidden { display: none; }
+
+    .sheet {
+      background: rgba(18,18,18,.92);
+      backdrop-filter: blur(40px) saturate(180%);
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      border: 1px solid rgba(255,255,255,.1);
+      border-bottom: none;
+      border-radius: 26px 26px 0 0;
+      padding: 20px 20px calc(var(--sb) + 24px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
       animation: slideUp .25s ease;
     }
-    @keyframes slideUp { from{transform:translateY(40px);opacity:0} to{transform:none;opacity:1} }
-    .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 18px; }
-    .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
-    .modal-desc  { font-size: 13px; color: var(--sub); margin-bottom: 16px; line-height: 1.5; }
-    .modal-ss { border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
-    .modal-ss img { width: 100%; display: block; max-height: 260px; object-fit: contain; background: var(--bg); }
-    .modal-input {
-      width: 100%; background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 12px 16px; font-size: 15px;
-      color: var(--text); font-family: inherit; outline: none;
-      transition: border-color .2s; margin-bottom: 12px;
-    }
-    .modal-input:focus { border-color: var(--purple); }
-    .modal-input::placeholder { color: var(--muted); }
-    .modal-send {
-      width: 100%; height: 48px; border-radius: 14px;
-      background: linear-gradient(135deg, var(--purple), #6d28d9);
-      border: none; color: #fff; font-size: 15px; font-weight: 600;
-      cursor: pointer; font-family: inherit; transition: .2s;
-    }
-    .modal-send:active { transform: scale(.97); }
+    @keyframes slideUp { from{transform:translateY(50px);opacity:0} to{transform:none;opacity:1} }
 
-    /* Keyboard mode toast */
+    .sheet-handle {
+      width: 38px; height: 4px; border-radius: 2px;
+      background: rgba(255,255,255,.15);
+      margin: 0 auto 20px;
+    }
+    .sheet-title { font-size: 17px; font-weight: 600; margin-bottom: 5px; }
+    .sheet-desc  { font-size: 13px; color: rgba(255,255,255,.4); margin-bottom: 18px; line-height: 1.5; }
+    .sheet-ss { border-radius: 14px; overflow: hidden; margin-bottom: 16px; border: 1px solid rgba(255,255,255,.1); }
+    .sheet-ss img { width: 100%; display: block; max-height: 240px; object-fit: contain; background: #000; }
+
+    .sheet-input {
+      width: 100%; background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 16px; padding: 13px 16px;
+      font-size: 15px; color: #fff; font-family: inherit;
+      outline: none; margin-bottom: 12px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.1);
+    }
+    .sheet-input::placeholder { color: rgba(255,255,255,.25); }
+    .sheet-input:focus { border-color: rgba(255,255,255,.3); }
+
+    .sheet-send {
+      width: 100%; height: 50px; border-radius: 16px;
+      background: #fff; color: #000;
+      border: none; font-size: 15px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: .18s;
+    }
+    .sheet-send:active { transform: scale(.97); background: rgba(255,255,255,.9); }
+
+    /* KB toast */
     .kb-toast {
-      position: fixed; bottom: calc(var(--safe-bottom) + 100px);
+      position: fixed;
+      bottom: calc(var(--sb) + 120px);
       left: 50%; transform: translateX(-50%);
-      background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3);
-      backdrop-filter: blur(8px);
+      background: rgba(255,255,255,.1);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,.15);
       border-radius: 99px; padding: 7px 18px;
-      font-size: 12px; color: var(--accent); font-weight: 500;
-      z-index: 50; display: none; animation: pop .2s;
+      font-size: 12px; color: rgba(255,255,255,.7);
+      z-index: 50; display: none; white-space: nowrap;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
     }
     .kb-toast.show { display: block; }
   </style>
 </head>
 <body>
-
 <div class="app">
 
-  <!-- TOPBAR -->
+  <!-- TOP BAR -->
   <div class="topbar">
-    <div class="logo-mark">🤖</div>
-    <div class="topbar-info">
+    <div class="logo">🤖</div>
+    <div class="topbar-text">
       <div class="topbar-name">Index Agent</div>
       <div class="topbar-sub">Amazon Nova 2 Lite</div>
     </div>
-    <div class="status-pill">
-      <div class="status-dot" id="statusDot"></div>
-      <span id="statusText">Idle</span>
+    <div class="status-glass">
+      <div class="sdot" id="sdot"></div>
+      <span id="stxt">Idle</span>
     </div>
   </div>
 
-  <!-- TAB BAR -->
-  <div class="tabbar">
-    <div class="tab active" id="tabBrowser" onclick="switchTab('browser')">
-      <span class="tab-icon">🌐</span>
-      Browser
-    </div>
-    <div class="tab" id="tabActivity" onclick="switchTab('activity')">
-      <span class="tab-icon">📋</span>
-      Activity
-      <span class="tab-badge" id="activityBadge"></span>
+  <!-- BROWSER CHROME -->
+  <div class="browser-bar">
+    <button class="nav-btn" onclick="nav('back')"    title="Back">‹</button>
+    <button class="nav-btn" onclick="nav('forward')" title="Fwd">›</button>
+    <button class="nav-btn" onclick="nav('refresh')" title="Refresh">↻</button>
+    <div class="url-bar">
+      <span class="url-lock" id="urlLock">🔒</span>
+      <input id="urlInput" type="url" placeholder="about:blank"
+             autocomplete="off" autocorrect="off" spellcheck="false"
+             onkeydown="if(event.key==='Enter'){nav('goto',this.value.trim());this.blur()}" />
+      <span class="live-chip" id="liveChip">LIVE</span>
     </div>
   </div>
 
-  <!-- CONTENT AREA -->
-  <div class="content">
+  <!-- LIVE CANVAS -->
+  <div class="canvas-wrap" id="canvasWrap"
+       ontouchstart="touch(event,'s')"
+       ontouchmove="touch(event,'m')"
+       ontouchend="touch(event,'e')"
+       onmousedown="mouse(event,'d')"
+       onmouseup="mouse(event,'u')"
+       onmousemove="mouse(event,'m')"
+       oncontextmenu="mouse(event,'c');return false"
+       onwheel="wheel(event)"
+       onclick="focusKb()">
+    <canvas id="liveCanvas"></canvas>
+    <div class="canvas-idle" id="canvasIdle">
+      <div class="canvas-idle-icon">🌐</div>
+      <p>Live browser appears here<br>once the agent starts</p>
+    </div>
+  </div>
 
-    <!-- BROWSER PANEL -->
-    <div class="panel active" id="panelBrowser">
-      <div class="browser-chrome">
-        <button class="nav-btn" onclick="sendNav('back')"    title="Back">‹</button>
-        <button class="nav-btn" onclick="sendNav('forward')" title="Forward">›</button>
-        <button class="nav-btn" onclick="sendNav('refresh')" title="Refresh">↻</button>
-        <div class="url-pill">
-          <span class="lock-icon" id="lockIcon">🔒</span>
-          <input id="urlInput" type="url" placeholder="about:blank" autocomplete="off" autocorrect="off" spellcheck="false"
-                 onkeydown="if(event.key==='Enter'){sendNav('goto',this.value.trim());this.blur()}" />
-        </div>
-        <span class="live-badge" id="liveBadge">● LIVE</span>
-      </div>
-      <div class="canvas-area" id="canvasArea"
-           ontouchstart="onTouch(event,'start')"
-           ontouchmove="onTouch(event,'move')"
-           ontouchend="onTouch(event,'end')"
-           onmousedown="onMouse(event,'down')"
-           onmouseup="onMouse(event,'up')"
-           onmousemove="onMouse(event,'move')"
-           onwheel="onWheel(event)">
-        <canvas id="liveCanvas"></canvas>
-        <div class="browser-idle" id="browserIdle">
-          <div class="browser-idle-icon">🌐</div>
-          <p>Live browser view appears here once the agent starts a task</p>
-        </div>
+  <!-- ACTIVITY FEED — always visible -->
+  <div class="feed-section">
+    <div class="feed-inner" id="feedInner">
+      <div class="feed-empty" id="feedEmpty">
+        Start a task to see live activity here
       </div>
     </div>
-
-    <!-- ACTIVITY PANEL -->
-    <div class="panel" id="panelActivity">
-      <div class="feed-list" id="feedList">
-        <div class="empty-activity" id="emptyActivity">
-          <div class="empty-icon">💬</div>
-          <p>Start a task and the agent's activity will appear here</p>
-        </div>
-      </div>
-      <div class="result-card" id="resultCard">
-        <div class="result-label">✓ Completed</div>
-        <div class="result-text" id="resultText"></div>
-      </div>
-    </div>
-
   </div>
 
   <!-- BOTTOM INPUT -->
-  <div class="bottom-input">
-    <div class="quick-row" id="quickRow">
-      <button class="quick-chip" onclick="setP('Summarize Hacker News top 5 stories')">📰 Hacker News</button>
-      <button class="quick-chip" onclick="setP('Wikipedia featured article today')">📖 Wikipedia</button>
-      <button class="quick-chip" onclick="setP('GitHub trending repos today')">💻 GitHub</button>
-      <button class="quick-chip" onclick="setP('Search DuckDuckGo for AI news 2025')">🔍 AI News</button>
+  <div class="bottom">
+    <div class="chips" id="chipsRow">
+      <button class="chip" onclick="setP('Summarize Hacker News top 5 stories')">Hacker News</button>
+      <button class="chip" onclick="setP('Wikipedia featured article today')">Wikipedia</button>
+      <button class="chip" onclick="setP('GitHub trending repos today')">GitHub trending</button>
+      <button class="chip" onclick="setP('Search DuckDuckGo for AI news 2025')">AI news</button>
     </div>
-    <div class="input-row">
-      <div class="input-wrap">
+    <div class="input-glass">
+      <div class="input-pill">
         <textarea id="promptInput" rows="1"
                   placeholder="Ask the agent to do something…"
-                  oninput="autoResize(this)"
-                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();runAgent()}"></textarea>
+                  oninput="grow(this)"
+                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();run()}"></textarea>
       </div>
-      <button class="send-btn" id="runBtn" onclick="runAgent()">▶</button>
+      <button class="send-btn" id="runBtn" onclick="run()">▶</button>
     </div>
-    <div class="sub-actions">
-      <button class="sub-btn force" id="forceBtn" onclick="forceContinue()">⚡ Forçar</button>
-      <button class="sub-btn stop"  id="stopBtn"  onclick="stopAgent()" disabled>■ Stop</button>
+    <div class="sub-row">
+      <button class="sub-btn" id="forceBtn" onclick="force()">⚡ Forçar</button>
+      <button class="sub-btn" id="stopBtn"  onclick="stop()" disabled>■ Stop</button>
     </div>
   </div>
 
 </div>
 
-<!-- HUMAN MODAL (bottom sheet) -->
-<div class="modal-overlay hidden" id="humanModal">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title">🧑‍💻 The agent needs your help</div>
-    <div class="modal-desc" id="modalDesc">It ran into something it can't handle on its own.</div>
-    <div class="modal-ss" id="modalSS" style="display:none">
-      <img id="modalImg" src="" alt="" />
+<!-- HUMAN BOTTOM SHEET -->
+<div class="overlay hidden" id="humanOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">The agent needs your help</div>
+    <div class="sheet-desc" id="sheetDesc">It ran into something it can't handle on its own.</div>
+    <div class="sheet-ss" id="sheetSS" style="display:none">
+      <img id="sheetImg" src="" alt="" />
     </div>
-    <input class="modal-input" id="modalInput" type="text" placeholder="Type your answer…" />
-    <button class="modal-send" onclick="submitHuman()">Send →</button>
+    <input class="sheet-input" id="sheetInput" type="text" placeholder="Type your answer…" />
+    <button class="sheet-send" onclick="submitHelp()">Send</button>
   </div>
 </div>
 
 <div class="kb-toast" id="kbToast">⌨ Keyboard active — tap elsewhere to exit</div>
 
 <script>
-/* ── Auto-resize textarea ── */
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-}
-
-/* ── Tab switching ── */
-let _activeTab = 'browser';
-let _unreadActivity = 0;
-
-function switchTab(tab) {
-  _activeTab = tab;
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('tab' + cap(tab)).classList.add('active');
-  document.getElementById('panel' + cap(tab)).classList.add('active');
-  if (tab === 'activity') {
-    _unreadActivity = 0;
-    document.getElementById('activityBadge').classList.remove('show');
-    document.getElementById('activityBadge').textContent = '';
-  }
-}
-
-function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-
-function bumpActivity() {
-  if (_activeTab !== 'activity') {
-    _unreadActivity++;
-    const b = document.getElementById('activityBadge');
-    b.textContent = _unreadActivity > 9 ? '9+' : _unreadActivity;
-    b.classList.add('show');
-  }
-}
+/* ── Canvas setup ── */
+const BW = 1280, BH = 800;
+const canvas = document.getElementById('liveCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = BW; canvas.height = BH;
 
 /* ── WebSocket ── */
 let ws = null;
 function connect() {
   const p = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(`${p}//${location.host}/ws`);
-  ws.onopen    = () => addCard('info', 'Connected', 'Ready to run tasks');
+  ws.onopen    = () => log('info', 'Connected and ready');
   ws.onmessage = e => handle(JSON.parse(e.data));
   ws.onclose   = () => { setStatus('idle'); setTimeout(connect, 2000); };
   ws.onerror   = () => ws.close();
 }
-function tx(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
+const tx = o => ws && ws.readyState === 1 && ws.send(JSON.stringify(o));
 
-/* ── Message handler ── */
-let _stepCard = null;
+/* ── Messages ── */
+let _stepEl = null;
 
 function handle(m) {
   switch (m.type) {
     case 'status':          setStatus(m.content); break;
     case 'step_start':      onStepStart(m.step); break;
-    case 'live_frame':      renderJpeg(m.data); if (m.url) setUrl(m.url); break;
-    case 'live_screenshot': if (m.screenshot) renderPng(m.screenshot); if (m.url) setUrl(m.url); break;
+    case 'live_frame':      drawJpeg(m.data); if (m.url) setUrl(m.url); break;
+    case 'live_screenshot': if (m.screenshot) drawPng(m.screenshot); if (m.url) setUrl(m.url); break;
     case 'step':            onStep(m); break;
     case 'human_control':   onHuman(m); break;
     case 'final':           onFinal(m); break;
-    case 'error':           addCard('error', 'Error', m.content); break;
+    case 'error':           log('err', m.content); break;
   }
 }
 
 /* ── Status ── */
 function setStatus(s) {
-  const dot = document.getElementById('statusDot');
-  const txt = document.getElementById('statusText');
+  const dot = document.getElementById('sdot');
+  const txt = document.getElementById('stxt');
   const run = document.getElementById('runBtn');
   const stp = document.getElementById('stopBtn');
   const inp = document.getElementById('promptInput');
 
-  dot.className = 'status-dot' + (s==='running'||s==='starting' ? ' on' : s==='error'||s==='paused' ? ' err' : '');
+  dot.className = 'sdot' + (s==='running'||s==='starting' ? ' on' : s==='error'||s==='paused' ? ' err' : '');
 
   if (s === 'paused') {
     txt.textContent = 'Paused';
@@ -585,219 +540,202 @@ function setStatus(s) {
   } else {
     txt.textContent = 'Idle';
     run.disabled = false; stp.disabled = true; inp.disabled = false;
-    document.getElementById('liveBadge').style.display = 'none';
+    document.getElementById('liveChip').style.display = 'none';
   }
 }
 
 /* ── Steps ── */
 function onStepStart(n) {
-  _stepCard = addCard('step', `Step ${n}`, '…', true);
-  bumpActivity();
-  // switch to browser if not there
+  _stepEl = log('step', '…', true, `Step ${n}`);
 }
-
 function onStep(m) {
-  setUrl(m.url || '');
-  if (m.screenshot) renderPng(m.screenshot);
-  const type = m.is_done ? 'done' : 'step';
-  const text = m.summary || (m.is_done ? 'Task complete.' : 'Working…');
-  if (_stepCard) finishCard(_stepCard, type, text);
-  else addCard(type, `Step ${m.step}`, text);
-  _stepCard = null;
-  if (m.error) addCard('error', 'Notice', m.error);
-  bumpActivity();
-}
-
-function onHuman(m) {
-  if (m.screenshot) renderPng(m.screenshot);
   if (m.url) setUrl(m.url);
-  document.getElementById('modalDesc').textContent = m.message;
-  const ss = document.getElementById('modalSS');
-  const mi = document.getElementById('modalImg');
-  if (m.screenshot) { mi.src = 'data:image/png;base64,' + m.screenshot; ss.style.display = 'block'; }
+  if (m.screenshot) drawPng(m.screenshot);
+  const text = m.summary || (m.is_done ? 'Done.' : 'Working…');
+  if (_stepEl) updateLog(_stepEl, m.is_done ? 'done' : 'step', text, `Step ${m.step}`);
+  else log(m.is_done ? 'done' : 'step', text, false, `Step ${m.step}`);
+  _stepEl = null;
+  if (m.error) log('err', m.error);
+}
+function onHuman(m) {
+  if (m.screenshot) drawPng(m.screenshot);
+  if (m.url) setUrl(m.url);
+  document.getElementById('sheetDesc').textContent = m.message;
+  const ss = document.getElementById('sheetSS');
+  const si = document.getElementById('sheetImg');
+  if (m.screenshot) { si.src = 'data:image/png;base64,'+m.screenshot; ss.style.display='block'; }
   else ss.style.display = 'none';
-  document.getElementById('modalInput').value = '';
-  document.getElementById('humanModal').classList.remove('hidden');
-  setTimeout(() => document.getElementById('modalInput').focus(), 100);
-  addCard('human', `Step ${m.step} — help needed`, m.message.slice(0, 100));
-  bumpActivity();
+  document.getElementById('sheetInput').value = '';
+  document.getElementById('humanOverlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('sheetInput').focus(), 100);
+  log('info', `Step ${m.step} — the agent needs your input`);
 }
-
 function onFinal(m) {
-  document.getElementById('resultText').textContent = m.content;
-  document.getElementById('resultCard').classList.add('show');
-  addCard('done', `Done in ${m.steps} step${m.steps===1?'':'s'}`, m.content.slice(0, 140));
-  bumpActivity();
+  log('done', m.content.slice(0,200));
 }
 
-/* ── Feed cards ── */
-const TAG_LABELS = { step:'In progress', done:'Done', error:'Error', human:'Help needed', info:'Info' };
+/* ── Feed log ── */
+const TYPE_LABEL = { step:'working', done:'done', err:'error', info:'info' };
 
-function now() { return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+function t() { return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
 
-function addCard(type, label, text, typing=false) {
-  const list = document.getElementById('feedList');
-  const empty = document.getElementById('emptyActivity');
+function log(type, text, typing=false, label=null) {
+  const inner = document.getElementById('feedInner');
+  const empty = document.getElementById('feedEmpty');
   if (empty) empty.remove();
 
-  const card = document.createElement('div');
-  card.className = `feed-card ${type}`;
-  card.innerHTML = `
-    <div class="card-header">
-      <span class="card-tag">${TAG_LABELS[type]||type}</span>
-      <span class="card-time">${now()}</span>
-    </div>
-    <div class="card-text${typing?' typing':''}">${esc(text)}</div>`;
-  list.appendChild(card);
-  list.scrollTop = list.scrollHeight;
-  return card;
+  const el = document.createElement('div');
+  el.className = 'log-entry ' + (type==='done'?'done':type==='err'?'err':'');
+  const lbl = label || TYPE_LABEL[type] || type;
+  const txtClass = 'log-text' + (typing ? ' typing' : '');
+  el.innerHTML = `
+    <div class="log-time">${t()}</div>
+    <div class="log-content">
+      <div class="log-label ${type==='step'?'active':type==='done'?'done':type==='err'?'err':''}">${lbl}</div>
+      <div class="${txtClass}">${esc(text)}</div>
+    </div>`;
+  inner.appendChild(el);
+  inner.scrollTop = inner.scrollHeight;
+  return el;
 }
 
-function finishCard(card, type, text) {
-  card.className = `feed-card ${type}`;
-  card.querySelector('.card-tag').textContent = TAG_LABELS[type]||type;
-  const ct = card.querySelector('.card-text');
-  ct.className = 'card-text';
-  ct.textContent = text;
-  document.getElementById('feedList').scrollTop = 9999;
+function updateLog(el, type, text, label) {
+  el.className = 'log-entry ' + (type==='done'?'done':type==='err'?'err':'');
+  el.querySelector('.log-label').className = 'log-label ' + (type==='done'?'done':type==='err'?'err':'');
+  el.querySelector('.log-label').textContent = label || TYPE_LABEL[type] || type;
+  const lt = el.querySelector('.log-text, [class*="log-text"]');
+  lt.className = 'log-text';
+  lt.textContent = text;
+  document.getElementById('feedInner').scrollTop = 9999;
 }
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-/* ── Canvas ── */
-const BW = 1280, BH = 800;
-const canvas = document.getElementById('liveCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = BW; canvas.height = BH;
-
-function renderJpeg(b64) {
+/* ── Canvas drawing ── */
+function drawJpeg(b64) {
   showCanvas();
   const img = new Image();
   img.onload = () => ctx.drawImage(img, 0, 0, BW, BH);
   img.src = 'data:image/jpeg;base64,' + b64;
 }
-function renderPng(b64) {
+function drawPng(b64) {
   showCanvas();
   const img = new Image();
   img.onload = () => ctx.drawImage(img, 0, 0, BW, BH);
   img.src = 'data:image/png;base64,' + b64;
 }
 function showCanvas() {
-  document.getElementById('browserIdle').style.display = 'none';
-  document.getElementById('liveBadge').style.display = 'block';
+  document.getElementById('canvasIdle').style.display = 'none';
+  document.getElementById('liveChip').style.display = 'block';
 }
 
 /* ── URL bar ── */
 function setUrl(url) {
   const inp = document.getElementById('urlInput');
   if (document.activeElement !== inp) inp.value = url;
-  document.getElementById('lockIcon').textContent = url.startsWith('https://') ? '🔒' : '🔓';
+  document.getElementById('urlLock').textContent = url.startsWith('https://') ? '🔒' : '🔓';
 }
 
-/* ── Touch events (mobile) ── */
-function touchCoords(t) {
+/* ── Touch ── */
+function cxy(clientX, clientY) {
   const r = canvas.getBoundingClientRect();
   return {
-    x: Math.round((t.clientX - r.left) * (BW / r.width)),
-    y: Math.round((t.clientY - r.top)  * (BH / r.height)),
+    x: Math.round((clientX - r.left) * (BW / r.width)),
+    y: Math.round((clientY - r.top)  * (BH / r.height)),
   };
 }
-function onTouch(e, type) {
-  if (document.getElementById('browserIdle').style.display === '') return;
+function touch(e, type) {
+  if (document.getElementById('canvasIdle').style.display !== 'none') return;
   e.preventDefault();
-  const t = e.touches[0] || e.changedTouches[0];
-  if (!t) return;
-  const {x,y} = touchCoords(t);
-  if (type === 'start') tx({type:'mousedown',x,y,button:0});
-  if (type === 'end')   { tx({type:'mouseup',x,y,button:0}); tx({type:'click',x,y,button:0}); }
-  if (type === 'move')  tx({type:'mousemove',x,y});
+  const t0 = e.touches[0] || e.changedTouches[0];
+  if (!t0) return;
+  const {x,y} = cxy(t0.clientX, t0.clientY);
+  if (type==='s') tx({type:'mousedown',x,y,button:0});
+  if (type==='e') { tx({type:'mouseup',x,y,button:0}); tx({type:'click',x,y,button:0}); }
+  if (type==='m') tx({type:'mousemove',x,y});
 }
 
-/* ── Mouse events (desktop) ── */
-function coords(e) {
-  const r = canvas.getBoundingClientRect();
-  return {
-    x: Math.round((e.clientX - r.left) * (BW / r.width)),
-    y: Math.round((e.clientY - r.top)  * (BH / r.height)),
-  };
-}
-let _lmv = 0;
-function onMouse(e, type) {
-  if (document.getElementById('browserIdle').style.display === '') return;
-  const {x,y} = coords(e);
+/* ── Mouse ── */
+let _lm = 0;
+function mouse(e, type) {
+  if (document.getElementById('canvasIdle').style.display !== 'none') return;
+  const {x,y} = cxy(e.clientX, e.clientY);
   if (x<0||y<0||x>BW||y>BH) return;
-  if (type==='move') { if(Date.now()-_lmv<50) return; _lmv=Date.now(); tx({type:'mousemove',x,y}); return; }
-  if (type==='down') tx({type:'mousedown',x,y,button:e.button});
-  if (type==='up')   tx({type:'mouseup',x,y,button:e.button});
+  if (type==='m') { if(Date.now()-_lm<50) return; _lm=Date.now(); tx({type:'mousemove',x,y}); return; }
+  if (type==='d') tx({type:'mousedown',x,y,button:e.button});
+  if (type==='u') tx({type:'mouseup',x,y,button:e.button});
+  if (type==='c') tx({type:'click',x,y,button:2});
 }
-function onWheel(e) {
+function wheel(e) {
   e.preventDefault();
-  if (document.getElementById('browserIdle').style.display === '') return;
-  const {x,y} = coords(e);
+  if (document.getElementById('canvasIdle').style.display !== 'none') return;
+  const {x,y} = cxy(e.clientX, e.clientY);
   tx({type:'wheel',x,y,deltaX:e.deltaX,deltaY:e.deltaY});
 }
 
 /* ── Keyboard ── */
 let _kb = false;
-document.getElementById('canvasArea').addEventListener('click', () => {
-  if (document.getElementById('browserIdle').style.display !== 'none') return;
+function focusKb() {
+  if (document.getElementById('canvasIdle').style.display !== 'none') return;
   _kb = true;
   document.getElementById('kbToast').classList.add('show');
-});
+}
 document.addEventListener('click', e => {
-  if (!e.target.closest('#canvasArea') && _kb) {
+  if (!e.target.closest('#canvasWrap') && _kb) {
     _kb = false;
     document.getElementById('kbToast').classList.remove('show');
   }
 });
 document.addEventListener('keydown', e => {
   if (!_kb) return;
-  if (e.key === 'Escape') { _kb = false; document.getElementById('kbToast').classList.remove('show'); return; }
+  if (e.key==='Escape') { _kb=false; document.getElementById('kbToast').classList.remove('show'); return; }
   e.preventDefault();
   tx({type:'keydown',key:e.key,code:e.code,modifiers:{shift:e.shiftKey,ctrl:e.ctrlKey,alt:e.altKey,meta:e.metaKey}});
 });
 
-/* ── Navigation ── */
-function sendNav(action, url) { tx({type:'navigate',action,url}); }
+/* ── Nav ── */
+function nav(action, url) { tx({type:'navigate',action,url}); }
 
-/* ── Agent controls ── */
-function runAgent() {
+/* ── Agent actions ── */
+function run() {
   const prompt = document.getElementById('promptInput').value.trim();
-  if (!prompt) return;
-  if (!ws || ws.readyState !== 1) return;
+  if (!prompt || !ws || ws.readyState !== 1) return;
 
-  document.getElementById('resultCard').classList.remove('show');
   document.getElementById('urlInput').value = '';
   ctx.clearRect(0,0,BW,BH);
-  document.getElementById('browserIdle').style.display = '';
-  document.getElementById('liveBadge').style.display = 'none';
+  document.getElementById('canvasIdle').style.display = '';
+  document.getElementById('liveChip').style.display = 'none';
 
-  // Clear feed
-  const fl = document.getElementById('feedList');
-  fl.innerHTML = '<div class="empty-activity" id="emptyActivity"><div class="empty-icon">💬</div><p>Start a task and the agent\'s activity will appear here</p></div>';
+  const fi = document.getElementById('feedInner');
+  fi.innerHTML = '<div class="feed-empty" id="feedEmpty">Start a task to see live activity here</div>';
 
   document.getElementById('promptInput').value = '';
   document.getElementById('promptInput').style.height = 'auto';
 
-  addCard('info', 'Task started', prompt);
+  log('info', prompt);
   tx({type:'run', prompt});
-  switchTab('browser');
+}
+function stop()  { tx({type:'stop'}); }
+function force() { tx({type:'force_continue'}); log('info','Resuming from where it stopped…'); }
+function setP(t) {
+  const ta = document.getElementById('promptInput');
+  ta.value = t; grow(ta); ta.focus();
+}
+function grow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
 }
 
-function stopAgent()     { tx({type:'stop'}); }
-function forceContinue() { tx({type:'force_continue'}); addCard('info','Force continue','Resuming…'); }
-function setP(text)      { const ta = document.getElementById('promptInput'); ta.value = text; autoResize(ta); ta.focus(); }
-
-/* ── Human modal ── */
-function submitHuman() {
-  const text = document.getElementById('modalInput').value.trim();
+/* ── Human sheet ── */
+function submitHelp() {
+  const text = document.getElementById('sheetInput').value.trim();
   if (!text) return;
-  tx({type:'human_input', text});
-  addCard('human', 'You replied', text);
-  document.getElementById('humanModal').classList.add('hidden');
+  tx({type:'human_input',text});
+  log('info', 'You replied: ' + text);
+  document.getElementById('humanOverlay').classList.add('hidden');
 }
-document.getElementById('modalInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') submitHuman();
+document.getElementById('sheetInput').addEventListener('keydown', e => {
+  if (e.key==='Enter') submitHelp();
 });
 
 connect();

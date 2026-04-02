@@ -4,24 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Index — Browser AI Agent</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
   <style>
     :root {
-      --bg: #0a0c14;
-      --surface: #111827;
-      --surface2: #1a2236;
-      --border: #1e2d45;
-      --accent: #4f8cff;
-      --accent2: #7c3aed;
-      --green: #10b981;
-      --red: #ef4444;
-      --yellow: #f59e0b;
-      --text: #e2e8f0;
-      --muted: #64748b;
-      --radius: 12px;
+      --bg:       #0d1117;
+      --surface:  #161b22;
+      --surface2: #1c2333;
+      --surface3: #21262d;
+      --border:   #30363d;
+      --accent:   #58a6ff;
+      --accent2:  #bc8cff;
+      --green:    #3fb950;
+      --red:      #f85149;
+      --yellow:   #d29922;
+      --orange:   #f0883e;
+      --text:     #e6edf3;
+      --muted:    #8b949e;
+      --radius:   10px;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--bg);
@@ -36,224 +37,222 @@
     header {
       display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 12px 20px;
+      gap: 12px;
+      padding: 10px 18px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
-      z-index: 10;
+      z-index: 20;
     }
-
     .logo {
-      width: 34px; height: 34px;
+      width: 30px; height: 30px;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 9px;
+      border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 17px;
+      font-size: 15px; flex-shrink: 0;
     }
-
     header h1 {
-      font-size: 17px; font-weight: 700; letter-spacing: -0.3px;
-      background: linear-gradient(90deg, #e2e8f0, #94a3b8);
+      font-size: 15px; font-weight: 700;
+      background: linear-gradient(90deg, #e6edf3, #8b949e);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
-
-    .header-right {
-      margin-left: auto;
-      display: flex; align-items: center; gap: 10px;
-    }
-
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
     .model-badge {
       font-size: 11px; font-weight: 600; padding: 3px 10px;
       border-radius: 20px;
-      background: rgba(79,140,255,.12); border: 1px solid rgba(79,140,255,.25);
+      background: rgba(88,166,255,.1); border: 1px solid rgba(88,166,255,.25);
       color: var(--accent);
     }
-
     .status-pill {
       display: flex; align-items: center; gap: 6px;
       padding: 3px 10px; border-radius: 20px;
       background: var(--surface2); border: 1px solid var(--border);
       font-size: 11px; color: var(--muted);
     }
-
     .status-dot {
       width: 7px; height: 7px; border-radius: 50%;
       background: var(--muted); transition: background .3s;
     }
-    .status-dot.running { background: var(--green); box-shadow: 0 0 7px var(--green); animation: pulse 1.4s infinite; }
+    .status-dot.running { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 1.4s infinite; }
     .status-dot.error   { background: var(--red); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
 
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-
-    /* ── MAIN LAYOUT ── */
-    main {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 360px;
-      overflow: hidden;
-    }
+    /* ── LAYOUT ── */
+    main { flex: 1; display: grid; grid-template-columns: 1fr 360px; overflow: hidden; }
 
     /* ── LEFT: BROWSER PANEL ── */
-    .browser-panel {
-      display: flex; flex-direction: column;
-      border-right: 1px solid var(--border);
-      overflow: hidden;
-      background: #060a10;
-    }
+    .browser-panel { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; background: #060a10; }
 
+    /* Chrome-like toolbar */
     .browser-toolbar {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 14px;
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px;
       background: var(--surface2);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
+    .nav-btn {
+      width: 28px; height: 28px;
+      border: none; border-radius: 6px;
+      background: transparent; color: var(--muted);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; transition: all .15s; flex-shrink: 0;
+    }
+    .nav-btn:hover:not(:disabled) { background: var(--surface3); color: var(--text); }
+    .nav-btn:disabled { opacity: .3; cursor: not-allowed; }
 
-    .browser-dots { display: flex; gap: 5px; }
-    .browser-dots span { width: 10px; height: 10px; border-radius: 50%; }
-    .browser-dots span:nth-child(1) { background: #ef4444; }
-    .browser-dots span:nth-child(2) { background: #f59e0b; }
-    .browser-dots span:nth-child(3) { background: #10b981; }
-
-    .url-bar {
-      flex: 1;
+    .url-wrap {
+      flex: 1; display: flex; align-items: center; gap: 8px;
       background: var(--bg);
       border: 1px solid var(--border);
       border-radius: 7px;
-      padding: 4px 12px;
-      font-size: 12px; color: var(--muted);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      font-family: monospace;
+      padding: 4px 10px;
+      transition: border-color .2s;
     }
+    .url-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88,166,255,.1); }
+    .url-icon { font-size: 11px; color: var(--green); flex-shrink: 0; }
+    .url-icon.insecure { color: var(--muted); }
+    #urlInput {
+      flex: 1; background: none; border: none; outline: none;
+      font-size: 12px; color: var(--text); font-family: monospace;
+    }
+    #urlInput::placeholder { color: var(--muted); }
 
+    .toolbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
     .step-badge {
-      font-size: 11px; font-weight: 700;
-      padding: 3px 9px; border-radius: 20px;
-      background: rgba(79,140,255,.1); border: 1px solid rgba(79,140,255,.2);
-      color: var(--accent); white-space: nowrap;
+      font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 20px;
+      background: rgba(88,166,255,.1); border: 1px solid rgba(88,166,255,.2);
+      color: var(--accent); white-space: nowrap; display: none;
+    }
+    .fps-badge {
+      font-size: 10px; padding: 2px 7px; border-radius: 20px;
+      background: rgba(63,185,80,.08); border: 1px solid rgba(63,185,80,.15);
+      color: var(--green); display: none; white-space: nowrap;
     }
 
-    .screenshot-wrap {
+    /* Canvas live view */
+    .canvas-wrap {
       flex: 1; overflow: hidden; position: relative;
       display: flex; align-items: center; justify-content: center;
+      background: #060a10;
     }
-
-    .screenshot-wrap img {
+    #browserCanvas {
       max-width: 100%; max-height: 100%;
-      object-fit: contain; display: block;
+      display: block;
+      cursor: default;
       image-rendering: -webkit-optimize-contrast;
-      cursor: crosshair;
     }
+    #browserCanvas.interactive { cursor: crosshair; }
 
-    .screenshot-placeholder {
+    /* overlay when idle */
+    .canvas-placeholder {
+      position: absolute; inset: 0;
       display: flex; flex-direction: column;
-      align-items: center; gap: 14px;
-      color: var(--muted);
+      align-items: center; justify-content: center; gap: 16px;
+      color: var(--muted); pointer-events: none;
     }
-    .screenshot-placeholder .ph-icon { font-size: 52px; opacity: .25; }
-    .screenshot-placeholder p { font-size: 13px; opacity: .4; text-align: center; line-height: 1.5; }
+    .canvas-placeholder .ph-icon { font-size: 56px; opacity: .15; }
+    .canvas-placeholder p { font-size: 13px; opacity: .35; text-align: center; line-height: 1.6; }
 
+    /* keyboard focus ring */
+    .canvas-wrap.kb-focus #browserCanvas { outline: 2px solid var(--accent); outline-offset: -2px; }
 
     /* ── RIGHT PANEL ── */
-    .right-panel {
-      display: flex; flex-direction: column; overflow: hidden;
-    }
+    .right-panel { display: flex; flex-direction: column; overflow: hidden; }
 
-    /* Input section */
     .input-section {
       padding: 14px;
       border-bottom: 1px solid var(--border);
       background: var(--surface);
       flex-shrink: 0;
     }
-
-    .input-section label {
-      display: block; font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .8px;
-      color: var(--muted); margin-bottom: 7px;
+    .section-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .8px; color: var(--muted); margin-bottom: 8px;
+      display: flex; align-items: center; gap: 5px;
     }
-
     .input-row { display: flex; gap: 8px; }
-
     textarea {
-      flex: 1;
-      background: var(--bg); border: 1px solid var(--border);
+      flex: 1; background: var(--bg); border: 1px solid var(--border);
       border-radius: var(--radius); color: var(--text);
       font-size: 13px; padding: 9px 13px;
-      resize: none; height: 76px; line-height: 1.5;
+      resize: none; height: 74px; line-height: 1.5;
       transition: border-color .2s; font-family: inherit;
     }
-    textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,140,255,.1); }
+    textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88,166,255,.08); }
     textarea::placeholder { color: var(--muted); }
     textarea:disabled { opacity: .5; cursor: not-allowed; }
 
-    .btn-group { display: flex; flex-direction: column; gap: 7px; }
-
+    .btn-group { display: flex; flex-direction: column; gap: 6px; }
     .btn {
       display: flex; align-items: center; justify-content: center; gap: 5px;
-      padding: 0 14px; height: 34px;
-      border-radius: 8px; font-size: 12px; font-weight: 700;
-      cursor: pointer; border: none; transition: all .2s; white-space: nowrap;
+      padding: 0 12px; height: 32px;
+      border-radius: 8px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: none; transition: all .18s; white-space: nowrap;
     }
-    .btn-primary { background: linear-gradient(135deg,var(--accent),#3b6fd4); color: #fff; min-width: 72px; }
-    .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #3b7dd4); color: #fff; min-width: 68px; }
+    .btn-primary:hover:not(:disabled) { filter: brightness(1.12); transform: translateY(-1px); }
     .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
-    .btn-danger  { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); color: var(--red); }
-    .btn-danger:hover { background: rgba(239,68,68,.2); }
+    .btn-danger  { background: rgba(248,81,73,.1); border: 1px solid rgba(248,81,73,.3); color: var(--red); }
+    .btn-danger:hover:not(:disabled) { background: rgba(248,81,73,.2); }
     .btn-danger:disabled { opacity: .3; cursor: not-allowed; }
-    .btn-force { background: linear-gradient(135deg,#f59e0b,#d97706); color: #fff; border: none; }
-    .btn-force:hover { filter: brightness(1.1); transform: translateY(-1px); }
-    .btn-force:disabled { opacity: .3; cursor: not-allowed; transform: none; }
+    .btn-force   { background: linear-gradient(135deg, #f0883e, #c96b1b); color: #fff; border: none; }
+    .btn-force:hover { filter: brightness(1.12); transform: translateY(-1px); }
 
-    .chips { margin-top: 9px; }
-    .chips-label { font-size: 10px; color: var(--muted); margin-bottom: 5px; }
+    .chips { margin-top: 10px; }
+    .chips-label { font-size: 10px; color: var(--muted); margin-bottom: 5px; display: flex; align-items: center; gap: 4px; }
     .chip-row { display: flex; flex-wrap: wrap; gap: 5px; }
     .chip {
       font-size: 11px; padding: 3px 9px; border-radius: 20px;
       background: var(--surface2); border: 1px solid var(--border);
-      color: var(--muted); cursor: pointer; transition: all .2s;
+      color: var(--muted); cursor: pointer; transition: all .15s;
     }
-    .chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(79,140,255,.08); }
+    .chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,.07); }
 
     /* Activity log */
     .activity-section { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
     .activity-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      padding: 9px 14px; border-bottom: 1px solid var(--border);
       background: var(--surface); flex-shrink: 0;
     }
-    .activity-header h3 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
-    .clear-btn { font-size: 11px; color: var(--muted); cursor: pointer; background: none; border: none; padding: 2px 5px; border-radius: 4px; }
+    .activity-header h3 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+    .clear-btn { font-size: 11px; color: var(--muted); cursor: pointer; background: none; border: none; padding: 2px 6px; border-radius: 4px; transition: color .15s; }
     .clear-btn:hover { color: var(--text); }
 
     .log-container {
       flex: 1; overflow-y: auto; padding: 10px;
-      display: flex; flex-direction: column; gap: 7px;
+      display: flex; flex-direction: column; gap: 6px;
       scrollbar-width: thin; scrollbar-color: var(--border) transparent;
     }
     .log-container::-webkit-scrollbar { width: 3px; }
     .log-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
     .log-item {
-      display: flex; gap: 9px; padding: 9px 11px;
-      border-radius: 9px; background: var(--surface2);
-      border: 1px solid var(--border); animation: slideIn .2s ease;
+      display: flex; gap: 9px; padding: 8px 11px;
+      border-radius: 8px; background: var(--surface2);
+      border: 1px solid var(--border); animation: slideIn .18s ease;
       align-items: flex-start;
     }
-    @keyframes slideIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
-
+    @keyframes slideIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
     .log-item.step    { border-left: 2px solid var(--accent); }
     .log-item.success { border-left: 2px solid var(--green); }
     .log-item.error   { border-left: 2px solid var(--red); }
     .log-item.info    { border-left: 2px solid var(--yellow); }
-    .log-item.human   { border-left: 2px solid #a855f7; }
-
-    .log-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+    .log-item.human   { border-left: 2px solid var(--accent2); }
+    .log-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; width: 16px; text-align: center; }
     .log-body { flex: 1; min-width: 0; }
-    .log-title { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+    .log-title { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 2px; }
     .log-text  { font-size: 12px; color: var(--text); line-height: 1.4; word-break: break-word; }
     .log-time  { font-size: 10px; color: var(--muted); flex-shrink: 0; margin-top: 2px; }
+
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; gap: 10px; color: var(--muted); padding: 20px; text-align: center;
+    }
+    .empty-state .big-icon { font-size: 32px; opacity: .2; }
+    .empty-state p { font-size: 12px; opacity: .4; line-height: 1.5; }
 
     /* Result */
     .result-section {
@@ -262,21 +261,14 @@
       flex-shrink: 0; max-height: 130px; overflow-y: auto; display: none;
     }
     .result-section.visible { display: block; }
-    .result-section h4 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--green); margin-bottom: 7px; }
+    .result-section h4 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--green); margin-bottom: 7px; display: flex; align-items: center; gap: 5px; }
     .result-text { font-size: 12px; color: var(--text); line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
-
-    .empty-state {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      height: 100%; gap: 10px; color: var(--muted); padding: 20px; text-align: center;
-    }
-    .empty-state .big-icon { font-size: 34px; opacity: .25; }
-    .empty-state p { font-size: 12px; opacity: .45; line-height: 1.5; }
 
     /* ── HUMAN CONTROL MODAL ── */
     .modal-backdrop {
       position: fixed; inset: 0;
-      background: rgba(5,8,16,.85);
-      backdrop-filter: blur(6px);
+      background: rgba(5,8,16,.88);
+      backdrop-filter: blur(8px);
       z-index: 100;
       display: flex; align-items: center; justify-content: center;
       padding: 24px;
@@ -284,94 +276,80 @@
     }
     @keyframes fadeIn { from{opacity:0} to{opacity:1} }
     .modal-backdrop.hidden { display: none; }
-
     .modal {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 16px;
-      width: 100%; max-width: 800px;
+      width: 100%; max-width: 820px;
       max-height: 90vh;
       display: flex; flex-direction: column;
       overflow: hidden;
       box-shadow: 0 32px 80px rgba(0,0,0,.7);
     }
-
     .modal-header {
       display: flex; align-items: center; gap: 12px;
       padding: 16px 20px;
       border-bottom: 1px solid var(--border);
-      background: rgba(168,85,247,.08);
+      background: rgba(188,140,255,.06);
       flex-shrink: 0;
     }
-    .modal-header .modal-icon {
+    .modal-icon {
       width: 38px; height: 38px;
-      background: rgba(168,85,247,.15);
-      border: 1px solid rgba(168,85,247,.3);
+      background: rgba(188,140,255,.12);
+      border: 1px solid rgba(188,140,255,.28);
       border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
+      font-size: 17px;
     }
-    .modal-header h2 { font-size: 16px; font-weight: 700; color: #d8b4fe; }
+    .modal-header h2 { font-size: 15px; font-weight: 700; color: #d8b4fe; }
     .modal-header p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
-
-    .modal-body {
-      flex: 1; overflow-y: auto; padding: 16px 20px;
-      display: flex; flex-direction: column; gap: 14px;
-    }
-
-    .modal-message {
-      background: rgba(168,85,247,.06);
-      border: 1px solid rgba(168,85,247,.18);
-      border-radius: 10px; padding: 12px 14px;
-      font-size: 13px; color: var(--text); line-height: 1.55;
-    }
-
-    .modal-screenshot {
-      border-radius: 10px; overflow: hidden;
-      border: 1px solid var(--border);
-      flex-shrink: 0;
-    }
+    .modal-body { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+    .modal-message { background: rgba(188,140,255,.05); border: 1px solid rgba(188,140,255,.16); border-radius: 10px; padding: 12px 14px; font-size: 13px; color: var(--text); line-height: 1.55; }
+    .modal-screenshot { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); flex-shrink: 0; }
     .modal-screenshot img { display: block; width: 100%; object-fit: contain; max-height: 380px; }
-
-    .modal-footer {
-      padding: 14px 20px;
-      border-top: 1px solid var(--border);
-      background: var(--surface2);
-      flex-shrink: 0;
-    }
+    .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); background: var(--surface2); flex-shrink: 0; }
     .modal-footer label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .7px; display: block; margin-bottom: 8px; }
     .modal-input-row { display: flex; gap: 8px; }
-
     .modal-input {
-      flex: 1;
-      background: var(--bg); border: 1px solid var(--border);
+      flex: 1; background: var(--bg); border: 1px solid var(--border);
       border-radius: 9px; color: var(--text);
       font-size: 14px; padding: 10px 14px;
-      transition: border-color .2s; font-family: inherit;
+      transition: border-color .2s; font-family: inherit; outline: none;
     }
-    .modal-input:focus { outline: none; border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168,85,247,.12); }
+    .modal-input:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(188,140,255,.1); }
     .modal-input::placeholder { color: var(--muted); }
-
     .btn-purple {
-      background: linear-gradient(135deg,#a855f7,#7c3aed);
+      background: linear-gradient(135deg, #a855f7, #7c3aed);
       color: #fff; border: none; border-radius: 9px;
       padding: 0 20px; height: 42px;
       font-size: 13px; font-weight: 700; cursor: pointer;
-      white-space: nowrap; transition: all .2s;
+      white-space: nowrap; transition: all .18s;
     }
     .btn-purple:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+    /* ── KEYBOARD INPUT OVERLAY ── */
+    #kbOverlay {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      background: var(--surface2); border: 1px solid var(--accent);
+      border-radius: 8px; padding: 6px 14px;
+      font-size: 12px; color: var(--accent);
+      display: none; align-items: center; gap: 7px;
+      z-index: 50; box-shadow: 0 4px 20px rgba(0,0,0,.5);
+      animation: fadeIn .2s;
+    }
+    #kbOverlay.visible { display: flex; }
   </style>
 </head>
 <body>
 
 <!-- HEADER -->
 <header>
-  <div class="logo">🤖</div>
+  <div class="logo"><i class="fa-solid fa-robot" style="font-size:13px;color:#fff"></i></div>
   <div>
     <h1>Index Agent</h1>
   </div>
   <div class="header-right">
-    <span class="model-badge">Amazon Nova 2 Lite</span>
+    <span class="model-badge"><i class="fa-solid fa-microchip"></i> Amazon Nova 2 Lite</span>
     <div class="status-pill">
       <div class="status-dot" id="statusDot"></div>
       <span id="statusText">Idle</span>
@@ -380,17 +358,36 @@
 </header>
 
 <main>
-  <!-- LEFT: BROWSER VIEW -->
+  <!-- LEFT: BROWSER PANEL -->
   <div class="browser-panel">
+    <!-- Chrome-like toolbar -->
     <div class="browser-toolbar">
-      <div class="browser-dots"><span></span><span></span><span></span></div>
-      <div class="url-bar" id="urlBar">about:blank</div>
-      <div class="step-badge" id="stepBadge" style="display:none">Step 0</div>
+      <button class="nav-btn" id="btnBack"    onclick="sendNav('back')"    title="Back"><i class="fa-solid fa-arrow-left"></i></button>
+      <button class="nav-btn" id="btnFwd"     onclick="sendNav('forward')" title="Forward"><i class="fa-solid fa-arrow-right"></i></button>
+      <button class="nav-btn" id="btnRefresh" onclick="sendNav('refresh')" title="Refresh"><i class="fa-solid fa-rotate-right"></i></button>
+      <div class="url-wrap">
+        <i class="fa-solid fa-lock url-icon" id="lockIcon"></i>
+        <input id="urlInput" type="text" placeholder="about:blank" spellcheck="false"
+               onkeydown="if(event.key==='Enter') sendNav('goto', this.value.trim())" />
+      </div>
+      <div class="toolbar-right">
+        <span class="fps-badge" id="fpsBadge"><i class="fa-solid fa-circle-play"></i> LIVE</span>
+        <span class="step-badge" id="stepBadge">Step 0</span>
+      </div>
     </div>
-    <div class="screenshot-wrap" id="screenshotWrap">
-      <div class="screenshot-placeholder" id="screenshotPlaceholder">
-        <div class="ph-icon">🌐</div>
-        <p>Browser view appears here<br>once the agent starts</p>
+
+    <!-- Canvas live view -->
+    <div class="canvas-wrap" id="canvasWrap"
+         onclick="focusCanvas()"
+         onmousedown="onCanvasMouse(event,'mousedown')"
+         onmouseup="onCanvasMouse(event,'mouseup')"
+         onmousemove="onCanvasMouse(event,'mousemove')"
+         oncontextmenu="onCanvasMouse(event,'contextmenu'); return false;"
+         onwheel="onCanvasWheel(event)">
+      <canvas id="browserCanvas"></canvas>
+      <div class="canvas-placeholder" id="canvasPlaceholder">
+        <div class="ph-icon"><i class="fa-brands fa-chrome"></i></div>
+        <p>Live browser view appears here<br>once the agent starts a task</p>
       </div>
     </div>
   </div>
@@ -398,51 +395,51 @@
   <!-- RIGHT: CONTROLS + LOG -->
   <div class="right-panel">
     <div class="input-section">
-      <label>Task</label>
+      <div class="section-label"><i class="fa-solid fa-terminal"></i> Task</div>
       <div class="input-row">
         <textarea id="promptInput" placeholder="e.g. Go to news.ycombinator.com and summarize the top 3 stories"></textarea>
         <div class="btn-group">
-          <button class="btn btn-primary" id="runBtn" onclick="runAgent()">▶ Run</button>
-          <button class="btn btn-force"   id="forceBtn" onclick="forceContinue()">⚡ Forçar</button>
-          <button class="btn btn-danger"  id="stopBtn" onclick="stopAgent()" disabled>■ Stop</button>
+          <button class="btn btn-primary" id="runBtn" onclick="runAgent()"><i class="fa-solid fa-play"></i> Run</button>
+          <button class="btn btn-force"   id="forceBtn" onclick="forceContinue()"><i class="fa-solid fa-bolt"></i> Forçar</button>
+          <button class="btn btn-danger"  id="stopBtn" onclick="stopAgent()" disabled><i class="fa-solid fa-stop"></i> Stop</button>
         </div>
       </div>
       <div class="chips">
-        <div class="chips-label">Quick tasks:</div>
+        <div class="chips-label"><i class="fa-solid fa-wand-magic-sparkles"></i> Quick tasks</div>
         <div class="chip-row">
-          <span class="chip" onclick="setPrompt(this)">Summarize Hacker News top 5</span>
-          <span class="chip" onclick="setPrompt(this)">Wikipedia featured article today</span>
-          <span class="chip" onclick="setPrompt(this)">GitHub trending repos</span>
-          <span class="chip" onclick="setPrompt(this)">Search DuckDuckGo for AI news 2025</span>
+          <span class="chip" onclick="setPrompt(this)"><i class="fa-brands fa-y-combinator"></i> Hacker News top 5</span>
+          <span class="chip" onclick="setPrompt(this)"><i class="fa-brands fa-wikipedia-w"></i> Wikipedia today</span>
+          <span class="chip" onclick="setPrompt(this)"><i class="fa-brands fa-github"></i> GitHub trending</span>
+          <span class="chip" onclick="setPrompt(this)"><i class="fa-solid fa-magnifying-glass"></i> DuckDuckGo AI news</span>
         </div>
       </div>
     </div>
 
     <div class="activity-section">
       <div class="activity-header">
-        <h3>Activity Log</h3>
-        <button class="clear-btn" onclick="clearLog()">Clear</button>
+        <h3><i class="fa-solid fa-list-check"></i> Activity Log</h3>
+        <button class="clear-btn" onclick="clearLog()"><i class="fa-solid fa-trash-can"></i></button>
       </div>
       <div class="log-container" id="logContainer">
         <div class="empty-state" id="emptyState">
-          <div class="big-icon">📋</div>
+          <div class="big-icon"><i class="fa-solid fa-clipboard-list"></i></div>
           <p>Run a task to see live activity here</p>
         </div>
       </div>
     </div>
 
     <div class="result-section" id="resultSection">
-      <h4>✅ Result</h4>
+      <h4><i class="fa-solid fa-circle-check"></i> Result</h4>
       <div class="result-text" id="resultText"></div>
     </div>
   </div>
 </main>
 
-<!-- ── HUMAN CONTROL MODAL ── -->
+<!-- HUMAN CONTROL MODAL -->
 <div class="modal-backdrop hidden" id="humanModal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-icon">🧑‍💻</div>
+      <div class="modal-icon"><i class="fa-solid fa-hand"></i></div>
       <div>
         <h2>Your help is needed</h2>
         <p>The agent encountered something it cannot handle automatically</p>
@@ -455,95 +452,94 @@
       </div>
     </div>
     <div class="modal-footer">
-      <label id="modalInputLabel">Type what's needed below and press Send</label>
+      <label><i class="fa-solid fa-keyboard"></i> Type what's needed below and press Send</label>
       <div class="modal-input-row">
         <input class="modal-input" id="modalInput" type="text" placeholder="Type your answer here..." />
-        <button class="btn-purple" onclick="submitHumanInput()">Send ↩</button>
+        <button class="btn-purple" onclick="submitHumanInput()"><i class="fa-solid fa-paper-plane"></i> Send</button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Keyboard mode toast -->
+<div id="kbOverlay"><i class="fa-solid fa-keyboard"></i> Keyboard mode active — type to send keys to browser</div>
+
 <script>
+  /* ── WebSocket ── */
   let ws = null;
 
   function connect() {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     ws = new WebSocket(`${proto}//${location.host}/ws`);
-    ws.onopen    = () => addLog('info', 'Connected', 'Ready to run tasks', '🔌');
+    ws.onopen    = () => addLog('info', 'Connected', 'Ready to run tasks', 'fa-plug');
     ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
     ws.onclose   = () => { setStatus('idle'); setTimeout(connect, 2000); };
     ws.onerror   = () => ws.close();
   }
 
+  function send(obj) {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+  }
+
+  /* ── Message handler ── */
   function handleMessage(msg) {
     switch (msg.type) {
       case 'status':
         setStatus(msg.content);
         break;
-
       case 'step_start':
-        document.getElementById('stepBadge').style.display = 'block';
-        document.getElementById('stepBadge').textContent = `Step ${msg.step}`;
-        showSpinner(true);
+        const sb = document.getElementById('stepBadge');
+        sb.style.display = 'block';
+        sb.textContent   = `Step ${msg.step}`;
         break;
-
+      case 'live_frame':
+        renderFrame(msg.data);
+        updateFps();
+        if (msg.url) updateUrl(msg.url);
+        break;
       case 'live_screenshot':
-        if (msg.screenshot) showScreenshot(msg.screenshot);
-        if (msg.url && msg.url !== 'about:blank') {
-          document.getElementById('urlBar').textContent = msg.url;
-        }
+        if (msg.screenshot) renderB64(msg.screenshot);
+        if (msg.url) updateUrl(msg.url);
         break;
-
       case 'step':
-        showSpinner(false);
         document.getElementById('stepBadge').textContent = `Step ${msg.step}`;
-        if (msg.url && msg.url !== 'about:blank') {
-          document.getElementById('urlBar').textContent = msg.url;
-        }
-        if (msg.screenshot) showScreenshot(msg.screenshot);
+        if (msg.url)        updateUrl(msg.url);
+        if (msg.screenshot) renderB64(msg.screenshot);
         addLog(msg.is_done ? 'success' : 'step',
                `Step ${msg.step}`,
                msg.summary || '(processing)',
-               msg.is_done ? '✅' : '🔄');
-        if (msg.error) addLog('error', 'Notice', msg.error, '⚠️');
+               msg.is_done ? 'fa-circle-check' : 'fa-rotate');
+        if (msg.error) addLog('error', 'Notice', msg.error, 'fa-triangle-exclamation');
         break;
-
       case 'human_control':
-        showSpinner(false);
-        if (msg.screenshot) showScreenshot(msg.screenshot);
-        if (msg.url)        document.getElementById('urlBar').textContent = msg.url;
+        if (msg.screenshot) renderB64(msg.screenshot);
+        if (msg.url)        updateUrl(msg.url);
         showHumanModal(msg.message, msg.screenshot);
-        addLog('human', `Step ${msg.step} — Your help needed`, msg.message.substring(0, 80), '🧑‍💻');
+        addLog('human', `Step ${msg.step} — Help needed`, msg.message.substring(0, 80), 'fa-hand');
         break;
-
       case 'final':
         document.getElementById('resultText').textContent = msg.content;
         document.getElementById('resultSection').classList.add('visible');
-        addLog('success', `Done in ${msg.steps} step${msg.steps===1?'':'s'}`, msg.content.substring(0, 100), '🎉');
+        addLog('success', `Done in ${msg.steps} step${msg.steps===1?'':'s'}`, msg.content.substring(0, 100), 'fa-trophy');
         break;
-
       case 'error':
-        showSpinner(false);
-        addLog('error', 'Error', msg.content, '❌');
+        addLog('error', 'Error', msg.content, 'fa-circle-xmark');
         break;
     }
   }
 
+  /* ── Status ── */
   function setStatus(s) {
-    const dot      = document.getElementById('statusDot');
-    const txt      = document.getElementById('statusText');
-    const run      = document.getElementById('runBtn');
-    const stop     = document.getElementById('stopBtn');
-    const forceBtn = document.getElementById('forceBtn');
-    const inp      = document.getElementById('promptInput');
+    const dot  = document.getElementById('statusDot');
+    const txt  = document.getElementById('statusText');
+    const run  = document.getElementById('runBtn');
+    const stop = document.getElementById('stopBtn');
+    const inp  = document.getElementById('promptInput');
 
-    dot.className = 'status-dot ' + (s === 'running' || s === 'starting' ? 'running' : s === 'error' ? 'error' : '');
-
-    forceBtn.disabled = false;
+    dot.className = 'status-dot ' + (s==='running'||s==='starting' ? 'running' : s==='error' ? 'error' : '');
 
     if (s === 'paused') {
-      txt.textContent = 'Pausado ⚡';
+      txt.textContent = 'Pausado';
       dot.className = 'status-dot error';
       run.disabled = true; stop.disabled = false; inp.disabled = true;
     } else if (s === 'running' || s === 'starting') {
@@ -552,64 +548,164 @@
     } else {
       txt.textContent = 'Idle';
       run.disabled = false; stop.disabled = true; inp.disabled = false;
-      showSpinner(false);
+      hideFps();
     }
   }
 
-  function forceContinue() {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ type: 'force_continue' }));
-    addLog('info', 'Forçando continuação', 'Retomando do ponto onde parou…', '⚡');
-  }
-
+  /* ── Canvas rendering ── */
   const BROWSER_W = 1280, BROWSER_H = 800;
+  const canvas = document.getElementById('browserCanvas');
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = BROWSER_W;
+  canvas.height = BROWSER_H;
 
-  function showScreenshot(b64) {
-    const wrap  = document.getElementById('screenshotWrap');
-    const ph    = document.getElementById('screenshotPlaceholder');
-    ph.style.display = 'none';
-    let img = wrap.querySelector('img.main-ss');
-    if (!img) {
-      img = document.createElement('img');
-      img.className = 'main-ss';
-      img.addEventListener('click', onScreenshotClick);
-      wrap.appendChild(img);
+  let _fpsCount = 0, _fpsTimer = null;
+
+  function renderFrame(jpegB64) {
+    document.getElementById('canvasPlaceholder').style.display = 'none';
+    document.getElementById('fpsBadge').style.display = 'block';
+    canvas.classList.add('interactive');
+    const img = new Image();
+    img.onload = () => { ctx.drawImage(img, 0, 0, BROWSER_W, BROWSER_H); };
+    img.src = 'data:image/jpeg;base64,' + jpegB64;
+  }
+
+  function renderB64(pngB64) {
+    document.getElementById('canvasPlaceholder').style.display = 'none';
+    canvas.classList.add('interactive');
+    const img = new Image();
+    img.onload = () => { ctx.drawImage(img, 0, 0, BROWSER_W, BROWSER_H); };
+    img.src = 'data:image/png;base64,' + pngB64;
+  }
+
+  function updateFps() {
+    _fpsCount++;
+    if (!_fpsTimer) {
+      _fpsTimer = setInterval(() => { _fpsCount = 0; }, 1000);
     }
-    img.src = 'data:image/png;base64,' + b64;
   }
 
-  function onScreenshotClick(e) {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    const img  = e.currentTarget;
-    const rect = img.getBoundingClientRect();
-    const natW = img.naturalWidth  || BROWSER_W;
-    const natH = img.naturalHeight || BROWSER_H;
-    const scale = Math.min(rect.width / natW, rect.height / natH);
-    const rendW = natW * scale;
-    const rendH = natH * scale;
-    const offX  = (rect.width  - rendW) / 2;
-    const offY  = (rect.height - rendH) / 2;
-    const relX  = e.clientX - rect.left - offX;
-    const relY  = e.clientY - rect.top  - offY;
-    const bx = Math.round((relX / rendW) * BROWSER_W);
-    const by = Math.round((relY / rendH) * BROWSER_H);
-    if (bx < 0 || by < 0 || bx > BROWSER_W || by > BROWSER_H) return;
-    ws.send(JSON.stringify({ type: 'click', x: bx, y: by }));
-    addLog('info', 'Click enviado', `x=${bx}, y=${by}`, '🖱️');
+  function hideFps() {
+    document.getElementById('fpsBadge').style.display = 'none';
+    clearInterval(_fpsTimer); _fpsTimer = null; _fpsCount = 0;
   }
 
-  function showSpinner() {}
+  function updateUrl(url) {
+    const input = document.getElementById('urlInput');
+    if (document.activeElement !== input) input.value = url;
+    const lock = document.getElementById('lockIcon');
+    if (url.startsWith('https://')) {
+      lock.className = 'fa-solid fa-lock url-icon';
+    } else {
+      lock.className = 'fa-solid fa-lock-open url-icon insecure';
+    }
+  }
 
+  /* ── Canvas ↔ browser coordinates ── */
+  function canvasCoords(e) {
+    const rect  = canvas.getBoundingClientRect();
+    const scaleX = BROWSER_W / rect.width;
+    const scaleY = BROWSER_H / rect.height;
+    return {
+      x: Math.round((e.clientX - rect.left) * scaleX),
+      y: Math.round((e.clientY - rect.top)  * scaleY),
+    };
+  }
+
+  let _lastMove = 0;
+  function onCanvasMouse(e, type) {
+    if (!canvas.classList.contains('interactive')) return;
+    const {x, y} = canvasCoords(e);
+    if (x < 0 || y < 0 || x > BROWSER_W || y > BROWSER_H) return;
+
+    if (type === 'mousemove') {
+      const now = Date.now();
+      if (now - _lastMove < 50) return; // throttle to 20/s
+      _lastMove = now;
+      send({ type: 'mousemove', x, y });
+      return;
+    }
+    if (type === 'mousedown') {
+      send({ type: 'mousedown', x, y, button: e.button });
+    } else if (type === 'mouseup') {
+      send({ type: 'mouseup', x, y, button: e.button });
+    } else if (type === 'contextmenu') {
+      send({ type: 'click', x, y, button: 2 });
+    }
+  }
+
+  function onCanvasWheel(e) {
+    if (!canvas.classList.contains('interactive')) return;
+    e.preventDefault();
+    const {x, y} = canvasCoords(e);
+    send({ type: 'wheel', x, y, deltaX: e.deltaX, deltaY: e.deltaY });
+  }
+
+  /* ── Keyboard forwarding ── */
+  let kbActive = false;
+  function focusCanvas() {
+    kbActive = true;
+    document.getElementById('canvasWrap').classList.add('kb-focus');
+    document.getElementById('kbOverlay').classList.add('visible');
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#canvasWrap')) {
+      kbActive = false;
+      document.getElementById('canvasWrap').classList.remove('kb-focus');
+      document.getElementById('kbOverlay').classList.remove('visible');
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!kbActive) return;
+    if (e.key === 'Escape') { kbActive = false; document.getElementById('canvasWrap').classList.remove('kb-focus'); document.getElementById('kbOverlay').classList.remove('visible'); return; }
+    e.preventDefault();
+    send({ type: 'keydown', key: e.key, code: e.code, modifiers: { shift: e.shiftKey, ctrl: e.ctrlKey, alt: e.altKey, meta: e.metaKey } });
+  });
+
+  /* ── Navigation ── */
+  function sendNav(action, url) {
+    send({ type: 'navigate', action, url });
+    if (action === 'refresh') addLog('info', 'Refresh', 'Refreshing page…', 'fa-rotate-right');
+    if (action === 'back')    addLog('info', 'Back', 'Going back…', 'fa-arrow-left');
+    if (action === 'forward') addLog('info', 'Forward', 'Going forward…', 'fa-arrow-right');
+    if (action === 'goto')    addLog('info', 'Navigate', url, 'fa-location-dot');
+  }
+
+  /* ── Agent controls ── */
+  function runAgent() {
+    const prompt = document.getElementById('promptInput').value.trim();
+    if (!prompt) { alert('Please enter a task first.'); return; }
+    if (!ws || ws.readyState !== WebSocket.OPEN) { alert('Not connected. Please wait.'); return; }
+
+    document.getElementById('resultSection').classList.remove('visible');
+    document.getElementById('urlInput').value = '';
+    document.getElementById('stepBadge').style.display = 'none';
+    canvas.classList.remove('interactive');
+    ctx.clearRect(0, 0, BROWSER_W, BROWSER_H);
+    document.getElementById('canvasPlaceholder').style.display = '';
+    clearLog();
+
+    addLog('info', 'Task started', prompt, 'fa-rocket');
+    send({ type: 'run', prompt });
+  }
+
+  function stopAgent()     { send({ type: 'stop' }); }
+  function forceContinue() { send({ type: 'force_continue' }); addLog('info', 'Force continue', 'Resuming…', 'fa-bolt'); }
+  function setPrompt(el)   { document.getElementById('promptInput').value = el.textContent.trim(); }
+
+  document.getElementById('promptInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runAgent();
+  });
+
+  /* ── Human modal ── */
   function showHumanModal(message, screenshotB64) {
     document.getElementById('modalMessage').textContent = message;
-    const modalSS  = document.getElementById('modalScreenshot');
-    const modalImg = document.getElementById('modalImg');
-    if (screenshotB64) {
-      modalImg.src = 'data:image/png;base64,' + screenshotB64;
-      modalSS.style.display = 'block';
-    } else {
-      modalSS.style.display = 'none';
-    }
+    const ms = document.getElementById('modalScreenshot');
+    const mi = document.getElementById('modalImg');
+    if (screenshotB64) { mi.src = 'data:image/png;base64,' + screenshotB64; ms.style.display = 'block'; }
+    else { ms.style.display = 'none'; }
     document.getElementById('modalInput').value = '';
     document.getElementById('humanModal').classList.remove('hidden');
     setTimeout(() => document.getElementById('modalInput').focus(), 100);
@@ -618,9 +714,8 @@
   function submitHumanInput() {
     const text = document.getElementById('modalInput').value.trim();
     if (!text) return;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ type: 'human_input', text }));
-    addLog('human', 'You answered', text, '✍️');
+    send({ type: 'human_input', text });
+    addLog('human', 'You answered', text, 'fa-pen');
     document.getElementById('humanModal').classList.add('hidden');
   }
 
@@ -628,6 +723,7 @@
     if (e.key === 'Enter') submitHumanInput();
   });
 
+  /* ── Activity log ── */
   function addLog(type, title, text, icon) {
     const container = document.getElementById('logContainer');
     const empty     = document.getElementById('emptyState');
@@ -636,7 +732,7 @@
     const item = document.createElement('div');
     item.className = `log-item ${type}`;
     item.innerHTML = `
-      <span class="log-icon">${icon}</span>
+      <span class="log-icon"><i class="fa-solid ${icon}"></i></span>
       <div class="log-body">
         <div class="log-title">${title}</div>
         <div class="log-text">${esc(text)}</div>
@@ -652,36 +748,9 @@
 
   function clearLog() {
     document.getElementById('logContainer').innerHTML =
-      '<div class="empty-state" id="emptyState"><div class="big-icon">📋</div><p>Run a task to see live activity here</p></div>';
+      '<div class="empty-state" id="emptyState"><div class="big-icon"><i class="fa-solid fa-clipboard-list"></i></div><p>Run a task to see live activity here</p></div>';
     document.getElementById('resultSection').classList.remove('visible');
   }
-
-  function runAgent() {
-    const prompt = document.getElementById('promptInput').value.trim();
-    if (!prompt) { alert('Please enter a task first.'); return; }
-    if (!ws || ws.readyState !== WebSocket.OPEN) { alert('Not connected. Please wait.'); return; }
-
-    document.getElementById('resultSection').classList.remove('visible');
-    const wrap = document.getElementById('screenshotWrap');
-    wrap.querySelector('img.main-ss')?.remove();
-    document.getElementById('screenshotPlaceholder').style.display = '';
-    document.getElementById('urlBar').textContent = 'Loading…';
-    document.getElementById('stepBadge').style.display = 'none';
-    clearLog();
-
-    addLog('info', 'Task started', prompt, '🚀');
-    ws.send(JSON.stringify({ type: 'run', prompt }));
-  }
-
-  function stopAgent() {
-    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'stop' }));
-  }
-
-  function setPrompt(el) { document.getElementById('promptInput').value = el.textContent; }
-
-  document.getElementById('promptInput').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) runAgent();
-  });
 
   connect();
 </script>

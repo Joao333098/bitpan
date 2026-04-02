@@ -201,9 +201,9 @@
     .btn-danger  { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); color: var(--red); }
     .btn-danger:hover { background: rgba(239,68,68,.2); }
     .btn-danger:disabled { opacity: .3; cursor: not-allowed; }
-    .btn-force { background: linear-gradient(135deg,#f59e0b,#d97706); color: #fff; border: none; display: none; }
+    .btn-force { background: linear-gradient(135deg,#f59e0b,#d97706); color: #fff; border: none; }
     .btn-force:hover { filter: brightness(1.1); transform: translateY(-1px); }
-    .btn-force.visible { display: flex; }
+    .btn-force:disabled { opacity: .3; cursor: not-allowed; transform: none; }
 
     .chips { margin-top: 9px; }
     .chips-label { font-size: 10px; color: var(--muted); margin-bottom: 5px; }
@@ -402,7 +402,7 @@
         <textarea id="promptInput" placeholder="e.g. Go to news.ycombinator.com and summarize the top 3 stories"></textarea>
         <div class="btn-group">
           <button class="btn btn-primary" id="runBtn" onclick="runAgent()">▶ Run</button>
-          <button class="btn btn-force"   id="forceBtn" onclick="forceContinue()">⚡ Continuar</button>
+          <button class="btn btn-force"   id="forceBtn" onclick="forceContinue()" disabled>⚡ Forçar</button>
           <button class="btn btn-danger"  id="stopBtn" onclick="stopAgent()" disabled>■ Stop</button>
         </div>
       </div>
@@ -540,17 +540,18 @@
     dot.className = 'status-dot ' + (s === 'running' || s === 'starting' ? 'running' : s === 'error' ? 'error' : '');
 
     if (s === 'paused') {
-      txt.textContent = 'Pausado';
+      txt.textContent = 'Pausado ⚡';
+      dot.className = 'status-dot error';
       run.disabled = true; stop.disabled = false; inp.disabled = true;
-      forceBtn.classList.add('visible');
+      forceBtn.disabled = false;
     } else if (s === 'running' || s === 'starting') {
       txt.textContent = s === 'starting' ? 'Starting…' : 'Running';
       run.disabled = true; stop.disabled = false; inp.disabled = true;
-      forceBtn.classList.remove('visible');
+      forceBtn.disabled = true;
     } else {
       txt.textContent = 'Idle';
       run.disabled = false; stop.disabled = true; inp.disabled = false;
-      forceBtn.classList.remove('visible');
+      forceBtn.disabled = true;
       showSpinner(false);
     }
   }
@@ -559,7 +560,7 @@
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({ type: 'force_continue' }));
     addLog('info', 'Forçando continuação', 'Retomando do ponto onde parou…', '⚡');
-    document.getElementById('forceBtn').classList.remove('visible');
+    document.getElementById('forceBtn').disabled = true;
   }
 
   function showScreenshot(b64) {

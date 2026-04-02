@@ -376,29 +376,53 @@ class Browser:
         async def _update_state(self) -> BrowserState:
                 """Update and return state."""
                 @retry(
-                        stop=stop_after_attempt(3),
-                        wait=wait_exponential(multiplier=0.5, min=0.5, max=2),
+                        stop=stop_after_attempt(5),
+                        wait=wait_exponential(multiplier=1, min=1, max=4),
                         retry=retry_if_exception_type((Exception)),
                         reraise=True
                 )
                 async def get_stable_state():
                         if self.current_page is None:
                                 await self._init_browser()
-                        url = self.current_page.url
 
+                        # If page is navigating, wait for it to settle first
+                        try:
+                                await self.current_page.wait_for_load_state('domcontentloaded', timeout=5000)
+                        except Exception:
+                                pass
+
+                        url = self.current_page.url
                         detect_sheets = 'docs.google.com/spreadsheets/d' in url
 
-                        screenshot_b64 = await self.fast_screenshot()
-                        
-                        interactive_elements_data = await self.get_interactive_elements(screenshot_b64, detect_sheets)
+                        try:
+                                screenshot_b64 = await self.fast_screenshot()
+                        except Exception:
+                                # CDP session may be stale after navigation — reset it
+                                self._cdp_session = None
+                                await asyncio.sleep(1)
+                                screenshot_b64 = await self.fast_screenshot()
+
+                        try:
+                                interactive_elements_data = await self.get_interactive_elements(screenshot_b64, detect_sheets)
+                        except Exception as e:
+                                if 'Execution context was destroyed' in str(e) or 'navigation' in str(e).lower():
+                                        # Page is still navigating — wait and retry
+                                        await asyncio.sleep(2)
+                                        try:
+                                                await self.current_page.wait_for_load_state('domcontentloaded', timeout=8000)
+                                        except Exception:
+                                                pass
+                                        interactive_elements_data = await self.get_interactive_elements(screenshot_b64, detect_sheets)
+                                else:
+                                        raise
+
                         interactive_elements = {element.index: element for element in interactive_elements_data.elements}
-                        
-                        # Create highlighted version of the screenshot
+
                         screenshot_with_highlights = put_highlight_elements_on_screenshot(
-                                interactive_elements, 
+                                interactive_elements,
                                 screenshot_b64
                         )
-                        
+
                         tabs = await self.get_tabs_info()
 
                         return BrowserState(
@@ -415,8 +439,7 @@ class Browser:
                         return self._state
                 except Exception as e:
                         logger.error(f'Failed to update state after multiple attempts: {str(e)}')
-                        # Return last known good state if available
-                        if hasattr(self, '_state'):
+                        if self._state is not None:
                                 return self._state
                         raise
         
